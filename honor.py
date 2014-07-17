@@ -4,10 +4,8 @@ import willie
 
 def setup(bot):
     if not bot.memory.contains('honor'):
-        bot.memory['honor'] = willie.tools.WillieMemory()
         bot.memory['honor'] = [ 'bacon', 'sweet tea', 'worfbot', 'god', 'mogh', 'gimli', 'moghbot', 'william riker', 'mstark', 'namer98', 'i can', 'aragorn, son of arathorn', 'captain picard', 'jean luc picard', 'jesus', 'gimli, son of gloin', 'blood wine', 'worf', 'commander riker', 'sweetened iced tea', 'st. thomas aquinas', 'aragorn', 'jesus christ' ]
     if not bot.memory.contains('dishonor'):
-        bot.memory['dishonor'] = willie.tools.WillieMemory()
         bot.memory['dishonor'] = [ 'eclipse', 'wasp', 'romulans', 'wasps', 'optimum', 'cheating', 'dishonor', 'lucifer', 'satan', 'deanna troi', 'quark', 'house of durasbot', 'house of duras', 'duras', 'com', 'lwaxana troi', 'durasbot' ]
 
 @willie.module.commands('honor')
