@@ -10,7 +10,7 @@ def setup(bot):
 def denounce_heretic(bot, trigger):
     target = trigger.group(1)
     if target not in bot.memory['heretics']:
-        init_heretic_target(target)
+        init_heretic_target(bot, target)
     # Check for this user's judgment
     if trigger.nick in bot.memory['heretics'][target]['no']:
         # User has changed his mind; remove from list of "no"s
@@ -25,7 +25,7 @@ def denounce_heretic(bot, trigger):
 def deny_heresy(bot, trigger):
     target = trigger.group(1)
     if target not in bot.memory['heretics']:
-        init_heretic_target(target)
+        init_heretic_target(bot, target)
     # Check for this user's judgment
     if trigger.nick in bot.memory['heretics'][target]['yes']:
         # User has changed his mind; remove from list of "yes"s
@@ -36,7 +36,7 @@ def deny_heresy(bot, trigger):
         bot.memory['heretics'][target]['no'].append(trigger.nick)
     bot.say('noted')
 
-def init_heretic_target(target):
+def init_heretic_target(bot, target):
     bot.memory['heretics'][target] = { 'yes': [], 'no': [] }
 
 def total_denunciations(target):
