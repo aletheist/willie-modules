@@ -11,6 +11,7 @@ def setup(bot):
 @willie.module.commands('honor')
 @willie.module.example('.honor')
 def honor(bot, trigger):
+    '''Check whether something (or someone) is honorable'''
     if not trigger.group(2):
         topic = trigger.nick
     else:
@@ -29,3 +30,28 @@ def say_honor(bot, topic):
             bot.say(topic + ' has honor')
         else:
             bot.say(topic + ' is without honor')
+
+@willie.module.commands('add')
+@willie.module.example('.add Worf:honorable')
+@willie.module.example('.add Worf and his family:Honorable')
+def add_phrase(bot, trigger):
+    ''' Specifies whether a phrase is honorable or not. This command may only be run by an admin!'''
+    if not trigger.admin:
+        return
+    args = trigger.group(2).split(':')
+    if len(args) != 2:
+        return
+    phrase = args[0].strip().lower()
+    value = args[1].strip().lower()
+    if value == 'honorable':
+        if phrase not in bot.memory['honor']:
+            bot.memory['honor'].append(phrase)
+        if phrase in bot.memory['dishonor']:
+            bot.memory['dishonor'].remove(phrase)
+        bot.say('Got it: ' + args[0] + ' is honorable.')
+    elif value == 'dishonorable':
+        if phrase not in bot.memory['dishonor']:
+            bot.memory['dishonor'].append(phrase)
+        if phrase in bot.memory['honor']:
+            bot.memory['honor'].remove(phrase)
+        bot.say('Got it: ' + args[0] + ' is dishonorable.')
