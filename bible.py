@@ -77,7 +77,7 @@ def set_preferred_version(bot, trigger):
         version = ''.join(version_re.groups())
 
     target = trigger.nick
-    channel_re = re.search(r'^(#\w+)', arg)
+    channel_re = re.search(r'^([#&][^\x07\x2C\s]{,200})', arg)
     if channel_re is not None and trigger.admin:
         target = channel_re.group(1)
 
