@@ -8,7 +8,7 @@ def setup(bot):
     if not bot.memory.contains('dishonor'):
         bot.memory['dishonor'] = [ 'eclipse', 'wasp', 'romulans', 'wasps', 'optimum', 'cheating', 'dishonor', 'lucifer', 'satan', 'deanna troi', 'quark', 'house of durasbot', 'house of duras', 'duras', 'com', 'lwaxana troi', 'durasbot' ]
 
-@willie.module.commands('honor')
+@willie.module.commands('honor', 'honour')
 @willie.module.example('.honor')
 def honor(bot, trigger):
     '''Check whether something (or someone) is honorable'''
