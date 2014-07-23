@@ -8,7 +8,7 @@ def setup(bot):
     if not bot.memory.contains('dishonor'):
         bot.memory['dishonor'] = [ 'eclipse', 'wasp', 'romulans', 'wasps', 'optimum', 'cheating', 'dishonor', 'lucifer', 'satan', 'deanna troi', 'quark', 'house of durasbot', 'house of duras', 'duras', 'com', 'lwaxana troi', 'durasbot' ]
 
-@willie.module.commands('honor')
+@willie.module.commands('honor', 'honour')
 @willie.module.example('.honor')
 def honor(bot, trigger):
     '''Check whether something (or someone) is honorable'''
@@ -16,20 +16,20 @@ def honor(bot, trigger):
         topic = trigger.nick
     else:
         topic = trigger.group(2)
-    say_honor(bot, topic.lower().strip())
+    say_honor(bot, topic.lower().strip(), trigger.group(1))
 
-def say_honor(bot, topic):
+def say_honor(bot, topic, word):
     if topic in bot.memory['honor']:
-        bot.say(topic + ' has honor')
+        bot.say(topic + ' has ' + word)
     elif topic in bot.memory['dishonor']:
-        bot.say(topic + ' is without honor')
+        bot.say(topic + ' is without ' + word)
     else:
         hasher = hashlib.md5()
         hasher.update(topic)
         if hasher.hexdigest()[-1] in ['0', '1', '2', '3', '4', '5', '6', '7']:
-            bot.say(topic + ' has honor')
+            bot.say(topic + ' has ' + word)
         else:
-            bot.say(topic + ' is without honor')
+            bot.say(topic + ' is without ' + word)
 
 @willie.module.commands('add')
 @willie.module.example('.add Worf:honorable')
