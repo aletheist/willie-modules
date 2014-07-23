@@ -9,7 +9,7 @@ def setup(bot):
         bot.memory['preferred_versions'] = willie.tools.WillieMemory()
 
 @willie.module.commands('b', 'bible')
-@willie.module.rule(r'\[(.+)\]')
+@willie.module.rule(r'.*\[(.+)\]')
 @willie.module.example('.b John 1:1')
 @willie.module.example('.b John 1:1 ESV')
 def bible(bot, trigger):
