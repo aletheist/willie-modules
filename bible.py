@@ -78,7 +78,7 @@ def set_preferred_version(bot, trigger):
 
     target = trigger.nick
     channel_re = re.search(r'^(#\w+)', arg)
-    if channel_re is not None:
+    if channel_re is not None and trigger.admin:
         target = channel_re.group(1)
 
     bot.memory['preferred_versions'][target] = version
