@@ -47,6 +47,13 @@ def bible(bot, trigger):
         text = re.sub(r'</p>', '', text)
         text = re.sub(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', r'\1', text)
 
+
+        copyright = None
+        try:
+            copyright = resp['response']['search']['result']['passages'][0]['copyright'].lstrip().rstrip().replace('\n', '').replace('<p>', '').replace('</p>', '')
+        except:
+            pass
+
         verses = re.split(r'<sup(?: \w+="[\w\d\.-]+")+>[\d-]+</sup>', text)
 
         verses = [ x for x in verses if x != '' ]
@@ -57,6 +64,8 @@ def bible(bot, trigger):
             bot.say(resp['response']['search']['result']['passages'][0]['display'] + ' (' + resp['response']['search']['result']['passages'][0]['version_abbreviation'] + ')')
             for verse in verses:
                 bot.say(verse)
+            if copyright is not None:
+                bot.say(copyright)
     else:
         if not brackets:
             bot.reply('nothing found!')
