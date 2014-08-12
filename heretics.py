@@ -6,8 +6,8 @@ def setup(bot):
     if not bot.memory.contains('heretics'):
         bot.memory['heretics'] = willie.tools.WillieMemory()
 
-@willie.module.rule(r'.*(\w+) is a(?:n)? heretic')
-@willie.module.rule(r'.*(\w+) are heretics')
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? heretic\b')
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are heretics\b')
 def denounce_heretic(bot, trigger):
     target = trigger.group(1)
     if target not in bot.memory['heretics']:
@@ -22,8 +22,8 @@ def denounce_heretic(bot, trigger):
         bot.memory['heretics'][target]['yes'].append(trigger.nick)
     bot.say('noted')
 
-@willie.module.rule(r'.*(\w+) is not a(?:n)? heretic')
-@willie.module.rule(r'.*(\w+) are not heretics')
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? heretic\b')
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not heretics\b')
 def deny_heresy(bot, trigger):
     target = trigger.group(1)
     if target not in bot.memory['heretics']:
