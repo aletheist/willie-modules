@@ -59,6 +59,18 @@ def bible(bot, trigger):
 @willie.module.example('.bver ESV')
 def set_preferred_version(bot, trigger):
     '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
+    if not trigger.group(2):
+        # No arg, just tell the user what version they have
+        prefVer = bot.memory['preferred_versions'][trigger.nick]
+        if prefVer is None:
+            # User has no preferred version, try the channel's
+            prefVer = bot.memory['preferred_versions'][trigger.sender]
+
+        if prefVer is not None:
+            bot.reply('Your preferred version is ' + prefVer)
+        return
+
+
     arg = trigger.group(2)
     version_re = re.search(r'([a-z]+-)?(\w+)$', arg)
     if version_re is None:
