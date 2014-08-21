@@ -61,10 +61,16 @@ def set_preferred_version(bot, trigger):
     '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
     if not trigger.group(2):
         # No arg, just tell the user what version they have
-        prefVer = bot.memory['preferred_versions'][trigger.nick]
+        try:
+            prefVer = bot.memory['preferred_versions'][trigger.nick]
+        except:
+            prefVer = None
         if prefVer is None:
             # User has no preferred version, try the channel's
-            prefVer = bot.memory['preferred_versions'][trigger.sender]
+            try:
+                prefVer = bot.memory['preferred_versions'][trigger.sender]
+            except:
+                prefVer = None
 
         if prefVer is not None:
             bot.reply('Your preferred version is ' + prefVer)
