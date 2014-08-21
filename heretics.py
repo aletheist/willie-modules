@@ -1,143 +1,68 @@
-import re
-import json
+import operator
 
 import willie
-import requests
-from bs4 import BeautifulSoup
 
 def setup(bot):
-    if not bot.memory.contains('preferred_versions'):
-        bot.memory['preferred_versions'] = willie.tools.WillieMemory()
-    setup_biblia(bot)
+    if not bot.memory.contains('heretics'):
+        bot.memory['heretics'] = willie.tools.WillieMemory()
 
-def setup_biblia(bot):
-    bot.memory['biblia_versions'] = []
-    versions_html = requests.get('http://api.biblia.com/docs/Available_Bibles')
-    versions_page = BeautifulSoup(versions_html.text)
-    for tr in versions_page.find('table').find_all('tr'):
-        if tr.find('strong') is None:
-            bot.memory['biblia_versions'].append(tr.find_all('td')[0].text.strip())
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? heretic\b')
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are heretics\b')
+def denounce_heretic(bot, trigger):
+    target = trigger.group(1)
+    if target not in bot.memory['heretics']:
+        init_heretic_target(bot, target)
+    # Check for this user's judgment
+    if trigger.nick in bot.memory['heretics'][target]['no']:
+        # User has changed his mind; remove from list of "no"s
+        bot.memory['heretics'][target]['no'].remove(trigger.nick)
 
-@willie.module.commands('b', 'bible')
-@willie.module.rule(r'.*\[(\d*\s*(?:\w+\s*)+\d+:*[\d-]*\s*(?:(?:[a-z]{1,4}-)?\w*)?)\]')
-@willie.module.example('.b John 1:1')
-@willie.module.example('.b John 1:1 ESV')
-def bible(bot, trigger):
-    '''Look up a passage in the bible. You can specify a desired version.'''
-    brackets = True
-    passage = trigger.group(1) # Either the command (b or bible), or the capture group from the rule.
-    if passage == 'b' or passage == 'bible':
-        if not trigger.group(2):
-            return bot.reply('No search term. An example: .b John 1:1')
-        else:
-            passage = trigger.group(2)
-            brackets = False
-    version_re = re.search(r' ([a-z]+-)?(\w+)$', passage)
-    if version_re is not None:
-        if version_re.group(1) is None:
-            if version_re.group(2) in bot.memory['biblia_versions']:
-                version = version_re.group(2)
-            else:
-                version = 'eng-' + version_re.group(2)
-        else:
-            version = ''.join(version_re.groups())
-        passage = passage.replace(version_re.group(0), '')
-    else:
-        if trigger.nick in bot.memory['preferred_versions']:
-            version = bot.memory['preferred_versions'][trigger.nick]
-        elif trigger.sender in bot.memory['preferred_versions']:
-            version = bot.memory['preferred_versions'][trigger.sender]
-        else:
-            version = 'eng-KJVA'
+    if trigger.nick not in bot.memory['heretics'][target]['yes']:
+        # User has not denounced target before; add to list of "yes"s
+        bot.memory['heretics'][target]['yes'].append(trigger.nick)
+    bot.say('noted')
 
-    if version in bot.memory['biblia_versions']:
-        lookup_biblia_com(bot, passage, version)
-    else:
-        lookup_bibles_org(bot, passage, version, brackets)
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? heretic\b')
+@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not heretics\b')
+def deny_heresy(bot, trigger):
+    target = trigger.group(1)
+    if target not in bot.memory['heretics']:
+        init_heretic_target(bot, target)
+    # Check for this user's judgment
+    if trigger.nick in bot.memory['heretics'][target]['yes']:
+        # User has changed his mind; remove from list of "yes"s
+        bot.memory['heretics'][target]['yes'].remove(trigger.nick)
 
-@willie.module.commands('bver', 'biblever')
-@willie.module.example('.bver ESV')
-def set_preferred_version(bot, trigger):
-    '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
-    if not trigger.group(2):
-        # No arg, just tell the user what version they have
-        prefVer = bot.memory['preferred_versions'][trigger.nick]
-        if prefVer is None:
-            # User has no preferred version, try the channel's
-            prefVer = bot.memory['preferred_versions'][trigger.sender]
+    if trigger.nick not in bot.memory['heretics'][target]['no']:
+        # User has not denied target before; add to list of "no"s
+        bot.memory['heretics'][target]['no'].append(trigger.nick)
+    bot.say('noted')
 
-        if prefVer is not None:
-            bot.reply('Your preferred version is ' + prefVer)
-        return
+def init_heretic_target(bot, target):
+    bot.memory['heretics'][target] = { 'yes': [], 'no': [] }
 
+def total_denunciations(target):
+    return (target[0], len(target[1]['yes']) - len(target[1]['no']))
 
-    arg = trigger.group(2)
-    version_re = re.search(r'([a-z]+-)?(\w+)$', arg)
-    if version_re is None:
-        return bot.reply('No version specified!')
+@willie.module.commands('heretics')
+@willie.module.example('.heretics')
+def heretics(bot, trigger):
+    '''Lists the top 5 known heretics.'''
+    bot.say('Top Heretics')
+    for i, heretic in enumerate([ x for x in sorted(map(total_denunciations, bot.memory['heretics'].iteritems()), key=operator.itemgetter(1), reverse=True) if x[1] > 0][:5]):
+        bot.say('  #' + str(i + 1) + ' ' + heretic[0] + ' (' + str(heretic[1]) + ' denunciation' + ('s' if heretic[1] != 1 else '') + ')')
 
-    if version_re.group(1) is None:
-        if version_re.group(2) in bot.memory['biblia_versions']:
-            version = version_re.group(2)
-        else:
-            version = 'eng-' + version_re.group(2)
-    else:
-        version = ''.join(version_re.groups())
-
+@willie.module.commands('heretic')
+@willie.module.example('.heretic Spong')
+def heretic(bot, trigger):
+    '''Shows the "heretic score" of the given target, or the user if no target is given.'''
     target = trigger.nick
-    channel_re = re.search(r'^([#&][^\x07\x2C\s]{,200})', arg)
-    if channel_re is not None and trigger.admin:
-        target = channel_re.group(1)
+    if trigger.group(2):
+        target = trigger.group(2)
 
-    bot.memory['preferred_versions'][target] = version
-
-    return bot.reply('Set preferred version of ' + target + ' to ' + version)
-
-def lookup_bibles_org(bot, passage, version, brackets):
-    resp = requests.get('https://bibles.org/v2/passages.js', params={ 'q[]': passage, 'version': version }, auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
-    resp = json.loads(resp.text)
-    if len(resp['response']['search']['result']['passages']) > 0:
-        text = resp['response']['search']['result']['passages'][0]['text']
-
-        text = text.replace('\n', '')
-        text = re.sub(r'<h\d(?: \w+="[\w\d\.]+")+>.+?</h\d>', '', text)
-        text = re.sub(r'<p(?: \w+="[\w\d\.]+")+>', '', text)
-        text = re.sub(r'</p>', '', text)
-        text = re.sub(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', r'\1', text)
-
-        copyright = None
-        try:
-            copyright = resp['response']['search']['result']['passages'][0]['copyright'].lstrip().rstrip().replace('\n', '').replace('<p>', '').replace('</p>', '')
-        except:
-            pass
-
-        verses = re.split(r'<sup(?: \w+="[\w\d\.-]+")+>[\d-]+</sup>', text)
-
-        verses = [ x for x in verses if x != '' ]
-
-        if len(verses) > 5:
-            bot.reply('passage too long')
-        else:
-            bot.say(resp['response']['search']['result']['passages'][0]['display'] + ' (' + resp['response']['search']['result']['passages'][0]['version_abbreviation'] + ')')
-            for verse in verses:
-                bot.say(verse)
-            if copyright is not None:
-                bot.say(copyright)
+    if target in bot.memory['heretics']:
+        obj = bot.memory['heretics'][target]
+        total = len(obj['yes']) - len(obj['no'])
+        bot.say(target + ' (' + str(total) + ' denunciation' + ('s' if total != 1 else '') + ')')
     else:
-        if not brackets:
-            bot.reply('nothing found!')
-
-def lookup_biblia_com(bot, passage, version):
-    resp = requests.get('http://api.biblia.com/v1/bible/content/' + version + '.txt', params={ 'passage': passage, 'key': 'fd37d8f28e95d3be8cb4fbc37e15e18e', 'style': 'oneVersePerLine' })
-    lines = [ re.sub('^\d+', '', x).strip() for x in resp.text.encode('utf-8').split('\r\n') ]
-    if lines == [''] or len(lines) == 1:
-        bot.reply('nothing found!')
-    else:
-        ref = lines[0]
-        verses = lines[1:]
-        if len(verses) > 5:
-            bot.reply('passage too long')
-        else:
-            bot.say(ref)
-            for verse in verses:
-                bot.say(verse)
+        bot.say(target + ' (0 denunciations)')
