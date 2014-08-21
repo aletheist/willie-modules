@@ -19,7 +19,7 @@ def setup_biblia(bot):
             bot.memory['biblia_versions'].append(tr.find_all('td')[0].text.strip())
 
 @willie.module.commands('b', 'bible')
-@willie.module.rule(r'.*\[(.+)\]')
+@willie.module.rule(r'.*\[(\d*\s*(?:\w+\s*)+\d+:*[\d-]*\s*(?:(?:[a-z]{1,4}-)?\w*)?)\]')
 @willie.module.example('.b John 1:1')
 @willie.module.example('.b John 1:1 ESV')
 def bible(bot, trigger):
