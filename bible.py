@@ -5,10 +5,14 @@ import willie
 import requests
 from bs4 import BeautifulSoup
 
+version_re = r'(\w+(?:-\w+)?)'
+passage_re = r'(\d*\s*(?:\w+\s*)+\d+(?::\d+(?:-\d+)?)?)\s?%s?' % version_re
+
 def setup(bot):
     if not bot.memory.contains('preferred_versions'):
         bot.memory['preferred_versions'] = willie.tools.WillieMemory()
     setup_biblia(bot)
+    setup_bibles_org(bot)
 
 def setup_biblia(bot):
     bot.memory['biblia_versions'] = []
@@ -18,88 +22,58 @@ def setup_biblia(bot):
         if tr.find('strong') is None:
             bot.memory['biblia_versions'].append(tr.find_all('td')[0].text.strip())
 
+def setup_bibles_org(bot):
+    bot.memory['bibles_versions'] = []
+    resp = requests.get('https://bibles.org/v2/versions.js', auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
+    resp = json.loads(resp.text)
+    for version in resp['response']['versions']:
+        bot.memory['bibles_versions'].append(version['id'])
+
 @willie.module.commands('b', 'bible')
-@willie.module.rule(r'.*\[(\d*\s*(?:\w+\s*)+\d+:*[\d-]*\s*(?:(?:[a-z]{1,4}-)?\w*)?)\]')
+@willie.module.rule('.*\[%s\]' % passage_re)
 @willie.module.example('.b John 1:1')
 @willie.module.example('.b John 1:1 ESV')
 def bible(bot, trigger):
     '''Look up a passage in the bible. You can specify a desired version.'''
-    brackets = True
-    passage = trigger.group(1) # Either the command (b or bible), or the capture group from the rule.
-    if passage == 'b' or passage == 'bible':
+    if trigger.group(1) == 'b' or trigger.group(1) == 'bible':
         if not trigger.group(2):
             return bot.reply('No search term. An example: .b John 1:1')
         else:
-            passage = trigger.group(2)
-            brackets = False
-    version_re = re.search(r' ([a-z]+-)?(\w+)$', passage)
-    if version_re is not None:
-        if version_re.group(1) is None:
-            if version_re.group(2) in bot.memory['biblia_versions']:
-                version = version_re.group(2)
-            else:
-                version = 'eng-' + version_re.group(2)
-        else:
-            version = ''.join(version_re.groups())
-        passage = passage.replace(version_re.group(0), '')
+            args = re.search(passage_re, trigger.group(2))
     else:
-        if trigger.nick in bot.memory['preferred_versions']:
-            version = bot.memory['preferred_versions'][trigger.nick]
-        elif trigger.sender in bot.memory['preferred_versions']:
-            version = bot.memory['preferred_versions'][trigger.sender]
-        else:
-            version = 'eng-KJVA'
+        args = trigger.match
+
+    version = get_version(bot, trigger, args)
+    if not version:
+        return bot.reply('Specified version not found')
 
     if version in bot.memory['biblia_versions']:
-        lookup_biblia_com(bot, passage, version)
+        lookup_biblia_com(bot, args.group(1), version)
     else:
-        lookup_bibles_org(bot, passage, version, brackets)
+        lookup_bibles_org(bot, args.group(1), version)
 
 @willie.module.commands('bver', 'biblever')
 @willie.module.example('.bver ESV')
 def set_preferred_version(bot, trigger):
     '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
     if not trigger.group(2):
-        # No arg, just tell the user what version they have
-        try:
-            prefVer = bot.memory['preferred_versions'][trigger.nick]
-        except:
-            prefVer = None
-        if prefVer is None:
-            # User has no preferred version, try the channel's
-            try:
-                prefVer = bot.memory['preferred_versions'][trigger.sender]
-            except:
-                prefVer = None
-
-        if prefVer is not None:
-            bot.reply('Your preferred version is ' + prefVer)
-        return
-
-
-    arg = trigger.group(2)
-    version_re = re.search(r'([a-z]+-)?(\w+)$', arg)
-    if version_re is None:
-        return bot.reply('No version specified!')
-
-    if version_re.group(1) is None:
-        if version_re.group(2) in bot.memory['biblia_versions']:
-            version = version_re.group(2)
-        else:
-            version = 'eng-' + version_re.group(2)
+        return bot.reply('Your preferred version is ' + get_default_version(bot, trigger))
     else:
-        version = ''.join(version_re.groups())
+        version = get_version(bot, trigger, trigger, allow_blank=False)
+        if not version:
+            return bot.reply('Specified version not found')
 
-    target = trigger.nick
-    channel_re = re.search(r'^([#&][^\x07\x2C\s]{,200})', arg)
-    if channel_re is not None and trigger.admin:
-        target = channel_re.group(1)
+        channel_re = re.search(r'^([#&][^\x07\x2C\s]{,200})', trigger.group(2))
+        if channel_re is not None and trigger.admin:
+            target = channel_re.group(1)
+        else:
+            target = trigger.nick
 
-    bot.memory['preferred_versions'][target] = version
+        bot.memory['preferred_versions'][target] = version
 
-    return bot.reply('Set preferred version of ' + target + ' to ' + version)
+        return bot.reply('Set preferred version of ' + target + ' to ' + version)
 
-def lookup_bibles_org(bot, passage, version, brackets):
+def lookup_bibles_org(bot, passage, version):
     resp = requests.get('https://bibles.org/v2/passages.js', params={ 'q[]': passage, 'version': version }, auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
     resp = json.loads(resp.text)
     if len(resp['response']['search']['result']['passages']) > 0:
@@ -130,8 +104,7 @@ def lookup_bibles_org(bot, passage, version, brackets):
             if copyright is not None:
                 bot.say(copyright)
     else:
-        if not brackets:
-            bot.reply('nothing found!')
+        bot.reply('nothing found!')
 
 def lookup_biblia_com(bot, passage, version):
     resp = requests.get('http://api.biblia.com/v1/bible/content/' + version + '.txt', params={ 'passage': passage, 'key': 'fd37d8f28e95d3be8cb4fbc37e15e18e', 'style': 'oneVersePerLine' })
@@ -147,3 +120,25 @@ def lookup_biblia_com(bot, passage, version):
             bot.say(ref)
             for verse in verses:
                 bot.say(verse)
+
+def get_version(bot, trigger, args, allow_blank=True):
+    if not args.group(2):
+        if allow_blank:
+            return get_default_version(bot, trigger)
+        else:
+            return False
+    else:
+        if args.group(2) in bot.memory['biblia_versions'] or args.group(2) in bot.memory['bibles_versions']:
+            return args.group(2)
+        elif 'eng-' + args.group(2) in bot.memory['bibles_versions']:
+            return 'eng-' + args.group(2)
+        else:
+            return False
+
+def get_default_version(bot, trigger):
+    if trigger.nick in bot.memory['preferred_versions']:
+        return bot.memory['preferred_versions'][trigger.nick]
+    elif trigger.sender in bot.memory['preferred_versions']:
+        return bot.memory['preferred_versions'][trigger.sender]
+    else:
+        return 'KJV'
