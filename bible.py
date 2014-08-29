@@ -5,8 +5,7 @@ import willie
 import requests
 from bs4 import BeautifulSoup
 
-version_re = r'(\w+(?:-\w+)?)'
-passage_re = r'(\d*\s*(?:\w+\s*)+\d+(?::\d+(?:-\d+)?)?)\s?%s?' % version_re
+passage_re = r'(\d*\s*(?:\w+\s*)+\d+(?::\d+(?:-\d+)?)?)\s?(\w+(?:-\w+)?)?'
 
 def setup(bot):
     if not bot.memory.contains('preferred_versions'):
@@ -33,6 +32,7 @@ def setup_bibles_org(bot):
 @willie.module.rule('.*\[%s\]' % passage_re)
 @willie.module.example('.b John 1:1')
 @willie.module.example('.b John 1:1 ESV')
+@willie.module.thread(True)
 def bible(bot, trigger):
     '''Look up a passage in the bible. You can specify a desired version.'''
     if trigger.group(1) == 'b' or trigger.group(1) == 'bible':
@@ -52,12 +52,12 @@ def bible(bot, trigger):
     else:
         lookup_bibles_org(bot, args.group(1), version)
 
-@willie.module.commands('bver', 'biblever')
-@willie.module.example('.bver ESV')
+@willie.module.commands('setbver', 'setbiblever')
+@willie.module.example('.setbver ESV')
 def set_preferred_version(bot, trigger):
     '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
     if not trigger.group(2):
-        return bot.reply('Your preferred version is ' + get_default_version(bot, trigger))
+        get_preferred_version(bot, trigger)
     else:
         version = get_version(bot, trigger, trigger, allow_blank=False)
         if not version:
@@ -73,6 +73,20 @@ def set_preferred_version(bot, trigger):
 
         return bot.reply('Set preferred version of ' + target + ' to ' + version)
 
+@willie.module.commands('getbver', 'getbiblever')
+def get_preferred_version(bot, trigger):
+    return bot.reply('Your preferred version is ' + get_default_version(bot, trigger))
+
+@willie.module.commands('bver')
+@willie.module.priority('low')
+@willie.module.thread(True)
+def get_versions(bot, trigger):
+    '''Return a list of bot's Bible versions'''
+    versions = ', '.join(sorted(set(bot.memory['biblia_versions'] + bot.memory['bibles_versions'])))
+    if not trigger.is_privmsg:
+        bot.reply("I am sending you a private message of all my Bible versions!")
+    bot.msg(trigger.nick, 'Bible versions I recognise: ' + versions + '.', max_messages=10)
+
 def lookup_bibles_org(bot, passage, version):
     resp = requests.get('https://bibles.org/v2/passages.js', params={ 'q[]': passage, 'version': version }, auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
     resp = json.loads(resp.text)
@@ -85,11 +99,11 @@ def lookup_bibles_org(bot, passage, version):
         text = re.sub(r'</p>', '', text)
         text = re.sub(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', r'\1', text)
 
-        copyright = None
-        try:
-            copyright = resp['response']['search']['result']['passages'][0]['copyright'].lstrip().rstrip().replace('\n', '').replace('<p>', '').replace('</p>', '')
-        except:
-            pass
+        #copyright = None
+        #try:
+        #    copyright = resp['response']['search']['result']['passages'][0]['copyright'].lstrip().rstrip().replace('\n', '').replace('<p>', '').replace('</p>', '')
+        #except:
+        #    pass
 
         verses = re.split(r'<sup(?: \w+="[\w\d\.-]+")+>[\d-]+</sup>', text)
 
@@ -101,8 +115,8 @@ def lookup_bibles_org(bot, passage, version):
             bot.say(resp['response']['search']['result']['passages'][0]['display'] + ' (' + resp['response']['search']['result']['passages'][0]['version_abbreviation'] + ')')
             for verse in verses:
                 bot.say(verse)
-            if copyright is not None:
-                bot.say(copyright)
+            #if copyright is not None:
+            #    bot.say(copyright)
     else:
         bot.reply('nothing found!')
 
