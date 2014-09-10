@@ -1,5 +1,5 @@
 import hashlib
-
+import re
 import willie
 
 def setup(bot):
@@ -16,6 +16,9 @@ def honor(bot, trigger):
         topic = trigger.nick
     else:
         topic = trigger.group(2)
+        
+    if topic != 'I can':
+        topic = re.sub(r'\b(?:I|me)\b', trigger.nick, topic, re.IGNORECASE)
     say_honor(bot, topic, topic.lower().strip(), trigger.group(1))
 
 def say_honor(bot, orig_topic, topic, word):
