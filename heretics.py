@@ -48,8 +48,13 @@ def total_denunciations(target):
 @willie.module.example('.heretics')
 def heretics(bot, trigger):
     '''Lists the top 5 known heretics.'''
-    bot.say('Top Heretics')
-    for i, heretic in enumerate([ x for x in sorted(map(total_denunciations, bot.memory['heretics'].iteritems()), key=operator.itemgetter(1), reverse=True) if x[1] > 0][:5]):
+    num = 5
+    try:
+        num = int(trigger.group(2))
+    except:
+        pass
+    bot.say('Top %d Heretics' % num)
+    for i, heretic in enumerate([ x for x in sorted(map(total_denunciations, bot.memory['heretics'].iteritems()), key=operator.itemgetter(1), reverse=True) if x[1] > 0][:num]):
         bot.say('  #' + str(i + 1) + ' ' + heretic[0] + ' (' + str(heretic[1]) + ' denunciation' + ('s' if heretic[1] != 1 else '') + ')')
 
 @willie.module.commands('heretic')
