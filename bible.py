@@ -5,7 +5,7 @@ import willie
 import requests
 from bs4 import BeautifulSoup
 
-passage_re = r'(\d*\s*(?:\w+\s*)+\d+(?::\d+(?:-\d+)?)?)\s?(\w+(?:-\w+)?)?'
+passage_re = r'(\d*\s*(?:\w+\s+)+\d+(?::\d+(?:-\d+)?)?)\s?(\w+(?:-\w+)?)?'
 
 def setup(bot):
     if not bot.memory.contains('preferred_versions'):
@@ -97,7 +97,8 @@ def lookup_bibles_org(bot, passage, version):
         text = re.sub(r'<h\d(?: \w+="[\w\d\.]+")+>.+?</h\d>', '', text)
         text = re.sub(r'<p(?: \w+="[\w\d\.]+")+>', '', text)
         text = re.sub(r'</p>', '', text)
-        text = re.sub(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', r'\1', text)
+        while re.search(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', text) is not None:
+            text = re.sub(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', r'\1', text)
 
         #copyright = None
         #try:
