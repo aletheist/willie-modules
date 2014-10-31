@@ -27,9 +27,8 @@ def setup(bot):
 def country(bot, trigger):
     if trigger.host in bot.memory['country_host_timestamp'] and (datetime.datetime.now() - bot.memory['country_host_timestamp'][trigger.host]).total_seconds() < 30:
         return
-    else:
-        bot.memory['country_host_timestamp'][trigger.host] = datetime.datetime.now()
 
+    bot.memory['country_host_timestamp'][trigger.host] = datetime.datetime.now()
     ip = None
     m = re.search('ip.(\d+\.\d+\.\d+\.\d+)$', trigger.host)
     if m is None:
