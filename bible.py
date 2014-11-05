@@ -52,7 +52,7 @@ def bible(bot, trigger):
     else:
         lookup_bibles_org(bot, args.group(1), version)
 
-@willie.module.commands('setbver', 'setbiblever')
+@willie.module.commands('setbver', 'setbiblever', 'setbeaver')
 @willie.module.example('.setbver ESV')
 def set_preferred_version(bot, trigger):
     '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
@@ -73,11 +73,11 @@ def set_preferred_version(bot, trigger):
 
         return bot.reply('Set preferred version of ' + target + ' to ' + version)
 
-@willie.module.commands('getbver', 'getbiblever')
+@willie.module.commands('getbver', 'getbiblever', 'getbeaver')
 def get_preferred_version(bot, trigger):
     return bot.reply('Your preferred version is ' + get_default_version(bot, trigger))
 
-@willie.module.commands('bver')
+@willie.module.commands('bver', 'biblever', 'beaver')
 @willie.module.priority('low')
 @willie.module.thread(True)
 def get_versions(bot, trigger):
