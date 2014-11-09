@@ -1,0 +1,16 @@
+Question
+  id
+  text
+  answer
+
+QuestionInCategory
+  question_id
+  category_id
+
+Category
+  id
+  category
+
+Player
+  id
+  score
