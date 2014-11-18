@@ -50,7 +50,7 @@ def heretics(bot, trigger):
     '''Lists the top 5 known heretics.'''
     num = 5
     try:
-        num = int(trigger.group(2))
+        num = min(int(trigger.group(2)), 10) # Max out at 10 heretics to avoid spam (*ahem* ALETHEIST *ahem*)
     except:
         pass
     bot.say('Top %d Heretics' % num)
