@@ -71,3 +71,23 @@ def heretic(bot, trigger):
         bot.say(target + ' (' + str(total) + ' denunciation' + ('s' if total != 1 else '') + ')')
     else:
         bot.say(target + ' (0 denunciations)')
+
+@willie.module.commands('denunciations', 'denounced', 'mh', 'myheretics', 'defenses', 'defended')
+@willie.module.example('.denounced')
+def denounced(bot, trigger):
+    '''Shows who the user has denounced and defended.'''
+    username = trigger.nick
+    denounced = [t for t in bot.memory['heretics'] if username in bot.memory['heretics'][t]['yes']]
+    defended = [t for t in bot.memory['heretics'] if username in bot.memory['heretics'][t]['no']]
+    report = ''
+    if len(denounced) == 0:
+        report = report + username + ' has not denounced anything'
+    else:
+        string = ", ".join(denounced)
+        report = report + username + ' has denounced: ' + string
+    if len(defended) == 0:
+        report = report + ', and has not defended anything.'
+    else:
+        string = ", ".join(defended)
+        report = report + ', and has defended: ' + string
+    bot.say(report)
