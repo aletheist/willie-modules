@@ -15,10 +15,10 @@ def setup(bot):
 
 def setup_biblia(bot):
     bot.memory['biblia_versions'] = []
-    versions_html = requests.get('http://api.biblia.com/docs/Available_Bibles')
+    versions_html = requests.get('http://apidocs.biblia.com/Available_Bibles')
     versions_page = BeautifulSoup(versions_html.text)
     for tr in versions_page.find('table').find_all('tr'):
-        if tr.find('strong') is None:
+        if tr.find('th') is None:
             bot.memory['biblia_versions'].append(tr.find_all('td')[0].text.strip())
 
 def setup_bibles_org(bot):
