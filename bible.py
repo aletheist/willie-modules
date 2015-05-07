@@ -8,8 +8,6 @@ from bs4 import BeautifulSoup
 passage_re = r'(\d*\s*(?:\w+\s+)+\d+(?::\d+(?:-\d+)?)?)\s?(\w+(?:-\w+)?)?'
 
 def setup(bot):
-    if not bot.memory.contains('preferred_versions'):
-        bot.memory['preferred_versions'] = willie.tools.WillieMemory()
     setup_biblia(bot)
     setup_bibles_org(bot)
 
@@ -69,7 +67,7 @@ def set_preferred_version(bot, trigger):
         else:
             target = trigger.nick
 
-        bot.memory['preferred_versions'][target] = version
+        bot.db.set_nick_value(target, 'preferred_versions', version)
 
         return bot.reply('Set preferred version of ' + target + ' to ' + version)
 
@@ -151,9 +149,9 @@ def get_version(bot, trigger, args, allow_blank=True):
             return False
 
 def get_default_version(bot, trigger):
-    if trigger.nick in bot.memory['preferred_versions']:
-        return bot.memory['preferred_versions'][trigger.nick]
-    elif trigger.sender in bot.memory['preferred_versions']:
-        return bot.memory['preferred_versions'][trigger.sender]
+    if bot.db.get_nick_value(trigger.nick,'preferred_versions'):
+        return bot.db.get_nick_value(trigger.nick,'preferred_versions')
+    elif bot.db.get_nick_value(trigger.sender,'preferred_versions'):
+        return bot.db.get_nick_value(trigger.sender,'preferred_versions')
     else:
-        return 'KJV'
+        return 'ESV'
