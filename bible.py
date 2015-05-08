@@ -13,7 +13,7 @@ def setup(bot):
 
 def setup_biblia(bot):
     bot.memory['biblia_versions'] = []
-    versions_html = requests.get('http://apidocs.biblia.com/Available_Bibles')
+    versions_html = requests.get('http://bibliaapi.com/docs/Available_Bibles')
     versions_page = BeautifulSoup(versions_html.text)
     for tr in versions_page.find('table').find_all('tr'):
         if tr.find('th') is None:
@@ -154,4 +154,4 @@ def get_default_version(bot, trigger):
     elif bot.db.get_nick_value(trigger.sender,'preferred_versions'):
         return bot.db.get_nick_value(trigger.sender,'preferred_versions')
     else:
-        return 'ESV'
+        return 'KJV'
