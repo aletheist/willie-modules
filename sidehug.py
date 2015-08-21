@@ -1,7 +1,7 @@
-import willie
+import sopel
 
-@willie.module.commands('sidehug')
-@willie.module.example('.sidehug tommles')
+@sopel.module.commands('sidehug')
+@sopel.module.example('.sidehug tommles')
 def sidehug(bot, trigger):
     if not trigger.group(2):
         target = trigger.nick

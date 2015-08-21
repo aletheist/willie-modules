@@ -1,6 +1,6 @@
 import re
 
-import willie
+import sopel
 import requests
 from bs4 import BeautifulSoup
 
@@ -9,8 +9,8 @@ def first_sibling_matching(el, name):
         if element.name == name:
             return element
 
-@willie.module.commands('fallacy')
-@willie.module.example('.fallacy Ad Hominem')
+@sopel.module.commands('fallacy')
+@sopel.module.example('.fallacy Ad Hominem')
 def fallacy(bot, trigger):
     if not trigger.group(2):
         return

@@ -1,9 +1,9 @@
 import json
 import requests
-import willie
+import sopel
 
-@willie.module.commands('doge', 'dogecoin')
-@willie.module.thread(True)
+@sopel.module.commands('doge', 'dogecoin')
+@sopel.module.thread(True)
 def bible(bot, trigger):
     '''Look up the current prices from chain.so and average them.'''
     resp = json.loads(requests.get('https://chain.so/api/v2/get_price/DOGE/USD').text)

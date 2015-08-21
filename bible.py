@@ -1,7 +1,7 @@
 import re
 import json
 
-import willie
+import sopel
 import requests
 from bs4 import BeautifulSoup
 
@@ -26,11 +26,11 @@ def setup_bibles_org(bot):
     for version in resp['response']['versions']:
         bot.memory['bibles_versions'].append(version['id'])
 
-@willie.module.commands('b', 'bible')
-@willie.module.rule('.*\[%s\]' % passage_re)
-@willie.module.example('.b John 1:1')
-@willie.module.example('.b John 1:1 ESV')
-@willie.module.thread(True)
+@sopel.module.commands('b', 'bible')
+@sopel.module.rule('.*\[%s\]' % passage_re)
+@sopel.module.example('.b John 1:1')
+@sopel.module.example('.b John 1:1 ESV')
+@sopel.module.thread(True)
 def bible(bot, trigger):
     '''Look up a passage in the bible. You can specify a desired version.'''
     if trigger.group(1) == 'b' or trigger.group(1) == 'bible':
@@ -50,8 +50,8 @@ def bible(bot, trigger):
     else:
         lookup_bibles_org(bot, args.group(1), version)
 
-@willie.module.commands('setbver', 'setbiblever', 'setbeaver')
-@willie.module.example('.setbver ESV')
+@sopel.module.commands('setbver', 'setbiblever', 'setbeaver')
+@sopel.module.example('.setbver ESV')
 def set_preferred_version(bot, trigger):
     '''Sets your preferred bible version, to be used in the .b/.bible commands.'''
     if not trigger.group(2):
@@ -71,13 +71,13 @@ def set_preferred_version(bot, trigger):
 
         return bot.reply('Set preferred version of ' + target + ' to ' + version)
 
-@willie.module.commands('getbver', 'getbiblever', 'getbeaver')
+@sopel.module.commands('getbver', 'getbiblever', 'getbeaver')
 def get_preferred_version(bot, trigger):
     return bot.reply('Your preferred version is ' + get_default_version(bot, trigger))
 
-@willie.module.commands('bver', 'biblever', 'beaver')
-@willie.module.priority('low')
-@willie.module.thread(True)
+@sopel.module.commands('bver', 'biblever', 'beaver')
+@sopel.module.priority('low')
+@sopel.module.thread(True)
 def get_versions(bot, trigger):
     '''Return a list of bot's Bible versions'''
     versions = ', '.join(sorted(set(bot.memory['biblia_versions'] + bot.memory['bibles_versions'])))

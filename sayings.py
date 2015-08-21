@@ -18,7 +18,7 @@ def talk_about(bot, subject):
     bot.say(line + (' ' if len(line) > 0 else '') + subject + ' ' + verb + ' ' + bot.memory['sayings'][subject][1] + punctuation)
 
 #@willie.module.rule(r'(\w+)\?')
-@willie.module.rule(r'([\w ]+)')
+#@willie.module.rule(r'([\w ]+)')
 def sayings(bot, trigger):
     if trigger.group(1) in bot.memory['sayings']:
         if random.randint(1,10) == 10:

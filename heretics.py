@@ -1,13 +1,13 @@
 import operator
 
-import willie
+import sopel
 
 def setup(bot):
     if not bot.memory.contains('heretics'):
-        bot.memory['heretics'] = willie.tools.WillieMemory()
+        bot.memory['heretics'] = sopel.tools.WillieMemory()
 
-@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? heretic\b')
-@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are heretics\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? heretic\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are heretics\b')
 def denounce_heretic(bot, trigger):
     target = trigger.group(1)
     if target not in bot.memory['heretics']:
@@ -22,8 +22,8 @@ def denounce_heretic(bot, trigger):
         bot.memory['heretics'][target]['yes'].append(trigger.nick)
     bot.say('noted')
 
-@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? heretic\b')
-@willie.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not heretics\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? heretic\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not heretics\b')
 def deny_heresy(bot, trigger):
     target = trigger.group(1)
     if target not in bot.memory['heretics']:
@@ -44,8 +44,8 @@ def init_heretic_target(bot, target):
 def total_denunciations(target):
     return (target[0], len(target[1]['yes']) - len(target[1]['no']))
 
-@willie.module.commands('heretics')
-@willie.module.example('.heretics')
+@sopel.module.commands('heretics')
+@sopel.module.example('.heretics')
 def heretics(bot, trigger):
     '''Lists the top 5 known heretics.'''
     num = 5
@@ -57,8 +57,8 @@ def heretics(bot, trigger):
     for i, heretic in enumerate([ x for x in sorted(map(total_denunciations, bot.memory['heretics'].iteritems()), key=operator.itemgetter(1), reverse=True) if x[1] > 0][:num]):
         bot.say('  #' + str(i + 1) + ' ' + heretic[0] + ' (' + str(heretic[1]) + ' denunciation' + ('s' if heretic[1] != 1 else '') + ')')
 
-@willie.module.commands('heretic')
-@willie.module.example('.heretic Spong')
+@sopel.module.commands('heretic')
+@sopel.module.example('.heretic Spong')
 def heretic(bot, trigger):
     '''Shows the "heretic score" of the given target, or the user if no target is given.'''
     target = trigger.nick
@@ -72,8 +72,8 @@ def heretic(bot, trigger):
     else:
         bot.say(target + ' (0 denunciations)')
 
-@willie.module.commands('denunciations', 'denounced', 'mh', 'myheretics', 'defenses', 'defended')
-@willie.module.example('.denounced')
+@sopel.module.commands('denunciations', 'denounced', 'mh', 'myheretics', 'defenses', 'defended')
+@sopel.module.example('.denounced')
 def denounced(bot, trigger):
     '''Shows who the user has denounced and defended.'''
     username = trigger.nick

@@ -1,6 +1,6 @@
 import hashlib
 import re
-import willie
+import sopel
 
 def setup(bot):
     if not bot.memory.contains('honor'):
@@ -8,8 +8,8 @@ def setup(bot):
     if not bot.memory.contains('dishonor'):
         bot.memory['dishonor'] = [ 'eclipse', 'wasp', 'romulans', 'wasps', 'optimum', 'cheating', 'dishonor', 'lucifer', 'satan', 'deanna troi', 'quark', 'house of durasbot', 'house of duras', 'duras', 'com', 'lwaxana troi', 'durasbot' ]
 
-@willie.module.commands('honor', 'honour')
-@willie.module.example('.honor')
+@sopel.module.commands('honor', 'honour')
+@sopel.module.example('.honor')
 def honor(bot, trigger):
     '''Check whether something (or someone) is honorable'''
     if not trigger.group(2):
@@ -35,9 +35,9 @@ def say_honor(bot, orig_topic, topic, word):
         else:
             bot.say(orig_topic + ' is without ' + word)
 
-@willie.module.commands('add')
-@willie.module.example('.add Worf:honorable')
-@willie.module.example('.add Worf and his family:Honorable')
+@sopel.module.commands('add')
+@sopel.module.example('.add Worf:honorable')
+@sopel.module.example('.add Worf and his family:Honorable')
 def add_phrase(bot, trigger):
     ''' Specifies whether a phrase is honorable or not. This command may only be run by an admin!'''
     if not trigger.admin:
