@@ -67,7 +67,7 @@ def set_heretic_values(bot, target, channel, denunciations, defenses):
         all_heretics.append(target)
     bot.db.set_channel_value(channel, 'heretics', all_heretics)
 
-def score(bot, channel, target):
+def score(target, bot, channel):
     denounce_key = 'denounce_%s' % str(target)
     denounce_history = bot.db.get_channel_value(channel, denounce_key)
     heretic_count = 0
@@ -106,7 +106,7 @@ def heretic(bot, trigger):
     if trigger.group(2):
         target = trigger.group(2)
 
-    total = score(bot, channel, target)[1]
+    total = score(target, bot, channel)[1]
     bot.say(target + ' (' + str(total) + ' denunciation' + ('s' if total != 1 else '') + ')')
 
 @sopel.module.commands('denunciations', 'denounced', 'mh', 'myheretics', 'defenses', 'defended')
