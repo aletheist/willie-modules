@@ -85,7 +85,7 @@ def score(bot, target):
 @sopel.module.commands('heretics')
 @sopel.module.example('.heretics')
 def heretics(bot, trigger):
-    '''Lists the top 5 known heretics.'''
+    '''Lists the top X known heretics.'''
     num = 5
     try:
         num = min(int(trigger.group(2)), 10) # Max out at 10 heretics to avoid spam (*ahem* ALETHEIST *ahem*)
