@@ -89,7 +89,7 @@ def heretics(bot, trigger):
     num = 5
     channel = trigger.sender
     try:
-        num = min(int(trigger.group(2)), 10) # Max out at 10 heretics to avoid spam (*ahem* ALETHEIST *ahem*)
+        num = max(min(int(trigger.group(2)), 10), 1) # Restrict to 1 to 10 heretics to avoid spam (*ahem* ALETHEIST *ahem*)
     except:
         pass
     bot.say('Top %d Heretics' % num)
