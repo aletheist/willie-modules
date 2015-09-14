@@ -21,10 +21,18 @@ def setup_biblia(bot):
 
 def setup_bibles_org(bot):
     bot.memory['bibles_versions'] = []
-    resp = requests.get('https://bibles.org/v2/versions.js', auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
-    resp = json.loads(resp.text)
-    for version in resp['response']['versions']:
-        bot.memory['bibles_versions'].append(version['id'])
+    #resp = requests.get('https://bibles.org/v2/versions.js', auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
+    #resp = json.loads(resp.text)
+    #for version in resp['response']['versions']:
+    #    bot.memory['bibles_versions'].append(version['id'])
+    resp = requests.get('http://m.bibles.org/eng-GNTD/John/1/1/compare')
+    page = BeautifulSoup(resp.text)
+
+    version_list = page.find('ul', id='whichVersionList')
+    for li in version_list.find_all('li'):
+        for inp in li.find_all('input'):
+            if inp['name'] == 'version[]' and inp['value'][:4] == 'eng-':
+                bot.memory['bibles_versions'].append(inp['value'])
 
 @sopel.module.commands('b', 'bible')
 @sopel.module.rule('.*\[%s\]' % passage_re)
