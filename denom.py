@@ -10,7 +10,7 @@ def set_denom(bot, trigger):
     denom = trigger.group(2)
 
   bot.db.set_nick_value(person, 'denom', denom)
-  bot.reply('Got is: %s is %s' % (person, denom))
+  bot.reply('Got it: %s is %s' % (person, denom))
 
 @sopel.module.commands('denom', 'getdenom')
 @sopel.module.example('.denom mstark')
