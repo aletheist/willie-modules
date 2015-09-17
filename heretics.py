@@ -111,22 +111,44 @@ def heretic(bot, trigger):
 
 @sopel.module.commands('denunciations', 'denounced', 'mh', 'myheretics', 'defenses', 'defended')
 @sopel.module.example('.denounced')
+@sopel.module.example('.defended WorfBot')
 def denounced(bot, trigger):
-    '''Shows who the user has denounced and defended.'''
+    '''Either shows who the user has denounced/defended, or shows who has denounced/defended a target.'''
     channel = trigger.sender
-    nick = trigger.nick
-    all_heretics = bot.db.get_channel_value(channel, 'heretics')
-    denounced = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'denounce_%s' % str(t))]
-    defended = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'defense_%s' % str(t))]
     report = ''
-    if len(denounced) == 0:
-        report = report + nick + ' has not denounced anything'
+    if trigger.group(2):
+        target = trigger.group(2)
+        denounced = bot.db.get_channel_value(channel, 'denounce_%s' % str(target)) or []
+        defended = bot.db.get_channel_value(channel, 'defense_%s' % str(target)) or []
+
+        if len(denounced) == 0:
+            report = report + 'No one has denounced ' + target
+        else:
+            denouncers = ", ".join(denounced)
+            report = report + target + ' has been denounced by: ' + denouncers
+
+        if len(defended) == 0:
+            report = report + ', and has not been defended by anyone.'
+        else:
+            defenders = ", ".join(defended)
+            report = report + ', and has been defended by: ' + defenders
+
     else:
-        string = ", ".join(denounced)
-        report = report + nick + ' has denounced: ' + string
-    if len(defended) == 0:
-        report = report + ', and has not defended anything.'
-    else:
-        string = ", ".join(defended)
-        report = report + ', and has defended: ' + string
+        all_heretics = bot.db.get_channel_value(channel, 'heretics')
+        nick = trigger.nick
+        denounced = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'denounce_%s' % str(t))]
+        defended = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'defense_%s' % str(t))]
+        
+        if len(denounced) == 0:
+            report = report + nick + ' has not denounced anything'
+        else:
+            string = ", ".join(denounced)
+            report = report + nick + ' has denounced: ' + string
+
+        if len(defended) == 0:
+            report = report + ', and has not defended anything.'
+        else:
+            string = ", ".join(defended)
+            report = report + ', and has defended: ' + string
+
     bot.say(report)
