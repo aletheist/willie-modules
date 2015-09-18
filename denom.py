@@ -28,3 +28,4 @@ def get_denom(bot, trigger):
     bot.reply('%s is %s' % (person, bot.db.get_nick_value(person,'denom')))
   else:
     bot.reply('I don\'t know what %s is.' % person)
+
