@@ -4,14 +4,14 @@ import sopel
 @sopel.module.example('.setdenom Lutheran')
 def set_denom(bot, trigger):
   '''Set a user's denomination'''
-  length_limit=128
+  length_limit = 128
   person = str(trigger.nick)
   denom = 'Trout'
   if trigger.group(2):
     denom = trigger.group(2)
 
   if len(denom) > length_limit:
-    bot.reply('Denomination name too long. (Limit {0} characters)'.format(str(length_limit)))
+    bot.reply('Denomination name too long. (Limit %s characters)' % str(length_limit))
     return
 
   bot.db.set_nick_value(person, 'denom', denom)
