@@ -22,17 +22,17 @@ def set_denom(bot, trigger):
     return
 
   bot.memory['denom_ns_pending_checks'][person] = [ sender, denom ]
-  bot.msg('NickServ', 'INFO ' + person + ' ' + str(random.randint(0,100)))
+  bot.msg('NickServ', 'INFO ' + person + ' ' + str(random.randint(0,100))) # random character means that WorfBot will never send '...' after repeating himself, which otherwise is possible because hardcoded into sopel's irc.py
 
 @sopel.module.commands('denom', 'getdenom')
 @sopel.module.example('.denom mstark')
 def get_denom(bot, trigger):
-  person = str(trigger.nick).lower()
+  person = str(trigger.nick)
   if trigger.group(2):
     person = trigger.group(2)
 
   if bot.db.get_nick_value(person,'denom'):
-    bot.reply('%s is %s' % (person, bot.db.get_nick_value(person,'denom')))
+    bot.reply('%s is %s' % (person, bot.db.get_nick_value(person.lower(),'denom')))
   else:
     bot.reply('I don\'t know what %s is.' % person)
 
