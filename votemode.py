@@ -1,5 +1,6 @@
 import sopel
 from sopel.module import commands, priority, OP, HALFOP, VOICE, require_privilege
+from math import ceil
 from datetime import datetime
 from datetime import timedelta
 
@@ -47,19 +48,19 @@ def show_active_users(bot, trigger):
 def votekick(bot, trigger):
   channel = trigger.sender
   nick = trigger.nick
-  quota = (len(bot.memory['active_users'][channel])/2)
+  quota = (ceil(len(bot.memory['active_users'][channel])/2))
   # This isn't per user but it's probably an OK heuristic
   if datetime.now() - bot.memory['last_votekick'] > timedelta(minutes=5):
     bot.memory['kick_votes'] = dict()
   # Quota is 50% of active users plus one
   if trigger.group(2):
-    target = trigger.group(2)
+    target = str(trigger.group(2)).strip()
     target_privs = bot.privileges[channel][target]
     if target_privs > 0:
      bot.reply("You cannot votekick privileged users")
      return
     
-    if target in bot.memoery['kick_votes']:
+    if target in bot.memory['kick_votes']:
       bot.memory['kick_votes'][target] = bot.memory['kick_votes'][target] + 1
     else:
       bot.memory['kick_votes'][target] = 1
@@ -68,7 +69,7 @@ def votekick(bot, trigger):
       bot.write(['KICK', channel, target], "You have been voted off the island.")
     bot.memory['last_votekick'] = datetime.now()
   else:
-    bot.reply("Current active votes: ")
+    bot.reply("Current active votekicks (%s needed to kick): " % str(quota))
     for ballot in bot.memory['kick_votes']:
       bot.reply("%s has %s kick votes." % (ballot, bot.memory['kick_votes'][ballot]))
     return
