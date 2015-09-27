@@ -76,6 +76,9 @@ def votekick(bot, trigger):
     if not Identifier(target).is_nick():
       bot.reply("That is not a valid nick")
       return
+    if target not in bot.privileges[channel]:
+      bot.reply("I don't see that user.")
+      return
     target_privs = bot.privileges[channel][target]
     if target_privs > 0:
      bot.reply("You cannot votekick privileged users")
