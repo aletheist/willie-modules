@@ -7,8 +7,9 @@ from datetime import datetime
 from datetime import timedelta
 
 def clear_votes(bot):
-    bot.memory['ban_votes'] = dict()
-    bot.memory['kick_votes'] = dict()
+  bot.memory['ban_votes'] = dict()
+  bot.memory['kick_votes'] = dict()
+  bot.memory['voice_votes'] = dict()
 
 def setup(bot):
   bot.memory['active_users'] = dict()
@@ -26,7 +27,7 @@ def prune_active_users(bot):
     to_prune = list()
     for u in bot.memory['active_users'][c]:
       print('DEBUG: Removing %s' % bot.memory['active_users'][c][u])
-      if bot.memory['active_users'][c][u] + timedelta(minutes=5) < datetime.now():
+      if bot.memory['active_users'][c][u] + timedelta(minutes=15) < datetime.now():
         to_prune.append(u)
     for u in to_prune:
       del bot.memory['active_users'][c][u]
@@ -46,12 +47,12 @@ def show_active_users(bot, trigger):
   channel = trigger.sender
   nick = trigger.nick
   if channel not in bot.memory['active_users']:
-    bot.reply("No active users")
+    bot.say("No active users")
     return
   prune_active_users(bot)
-  bot.reply("Users active in %s: " % channel)
+  bot.say("Users active in %s: " % channel)
   for u in bot.memory['active_users'][channel]:
-    bot.reply("%s" % u)
+    bot.say("%s" % u)
 
 def calculate_quota(bot, trigger, mode):
   channel = trigger.sender
@@ -66,10 +67,10 @@ def votemode(bot, trigger, mode):
   prune_active_users(bot)
   # This isn't per user but it's probably an OK heuristic
   if datetime.now() - bot.memory['last_vote'] > timedelta(minutes=5):
-      clear_votes(bot)
+    clear_votes(bot)
   # Quota is 50% of active users plus one
   if trigger.group(2):
-    target = str(trigger.group(2)).strip()
+    target = str(trigger.group(2)).strip().lower()
     if not Identifier(target).is_nick():
       bot.reply("That is not a valid nick")
       return
@@ -95,8 +96,8 @@ def votemode(bot, trigger, mode):
       elif mode == 'ban':
         bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
       elif mode == 'voice':
-        bot.write(['voice', channel, target])
-        bot.say(['voice', channel, target], "%s has been granted voice." % target)
+        bot.write(['mode', channel, '+v', target])
+        bot.say("%s has been granted voice." % target)
       elif mode == 'registered':
         bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
         bot.say("Channel set to allow only registered users to join for 30 minutes.")
@@ -114,47 +115,15 @@ def votemode(bot, trigger, mode):
 @require_privilege(VOICE)
 @sopel.module.commands('voteban')
 def voteban(bot, trigger):
-    votemode(bot, trigger, 'ban')
+  votemode(bot, trigger, 'ban')
 
 @require_privilege(VOICE)
 @sopel.module.commands('votekick')
 def votekick(bot, trigger):
-  make_user_active(bot, trigger)
-  channel = trigger.sender
-  nick = trigger.nick
-  quota = calculate_quota(bot, trigger, Mode.Kick) 
-  prune_active_users(bot)
-  # This isn't per user but it's probably an OK heuristic
-  if datetime.now() - bot.memory['last_votekick'] > timedelta(minutes=5):
-    bot.memory['kick_votes'] = dict()
-  # Quota is 50% of active users plus one
-  if trigger.group(2):
-    target = str(trigger.group(2)).strip()
-    if not Identifier(target).is_nick():
-      bot.reply("That is not a valid nick")
-      return
-    if target not in bot.privileges[channel]:
-      bot.reply("I don't see that user.")
-      return
-    target_privs = bot.privileges[channel][target]
-    if target_privs > 0:
-     bot.reply("You cannot votekick privileged users")
-     return
-    
-    if target in bot.memory['kick_votes']:
-      if str(nick) not in bot.memory['kick_votes'][target]:
-        bot.memory['kick_votes'][target].append(str(nick))
-    else:
-      bot.memory['kick_votes'][target] = list()
-      bot.memory['kick_votes'][target].append(str(nick))
-    bot.reply("Vote recorded.")
-    
-    if len(bot.memory['kick_votes'][target]) > quota:
-      bot.write(['KICK', channel, target], "You have been voted off the island.")
-    bot.memory['last_votekick'] = datetime.now()
-  else:
-    bot.say("Current active votekicks (%s needed to kick): " % str(quota + 1))
-    for ballot in bot.memory['kick_votes']:
-      bot.say("%s has %s kick votes." % (ballot, len(bot.memory['kick_votes'][ballot])))
-    return
+  votemode(bot, trigger, 'kick')
+
+@require_privilege(VOICE)
+@sopel.module.commands('votevoice')
+def votevoice(bot, trigger):
+  votemode(bot, trigger, 'voice')
 
