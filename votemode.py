@@ -18,10 +18,10 @@ def setup(bot):
   bot.memory['last_vote'] = datetime.now()
   bot.memory['mode_threshold'] = dict()
   bot.memory['mode_threshold']['kick'] = 0.5
-  bot.memory['mode_threshold']['ban'] = 0.5
-  bot.memory['mode_threshold']['moderated'] = 0.5
-  bot.memory['mode_threshold']['registered'] = 0.5
-  bot.memory['mode_threshold']['voice'] = 0.5
+  bot.memory['mode_threshold']['ban'] = 0.66
+  bot.memory['mode_threshold']['moderated'] = 0.3
+  bot.memory['mode_threshold']['registered'] = 0.4
+  bot.memory['mode_threshold']['voice'] = 0.4
   clear_votes(bot)
 
 def prune_active_users(bot):
