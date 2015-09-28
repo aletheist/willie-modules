@@ -10,6 +10,8 @@ def clear_votes(bot):
   bot.memory['ban_votes'] = dict()
   bot.memory['kick_votes'] = dict()
   bot.memory['voice_votes'] = dict()
+  bot.memory['registered_votes'] = dict()
+  bot.memory['moderated_votes'] = dict()
 
 def setup(bot):
   bot.memory['active_users'] = dict()
@@ -94,7 +96,8 @@ def votemode(bot, trigger, mode):
       if mode == 'kick':
         bot.write(['KICK', channel, target], "You have been voted off the island.")
       elif mode == 'ban':
-        bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
+        bot.msg('chanserv', 'AKICK %s ADD %s!*@* !T 30 Users have voted you out of the channel for 30 minutes.' % (channel, target))
+        bot.say('chanserv ' +  'AKICK %s ADD %s!*@* !T 30 Users have voted you out of the channel for 30 minutes.' % (channel, target))
       elif mode == 'voice':
         bot.write(['mode', channel, '+v', target])
         bot.say("%s has been granted voice." % target)
