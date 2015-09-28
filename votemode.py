@@ -6,19 +6,20 @@ from math import ceil
 from datetime import datetime
 from datetime import timedelta
 
+def clear_votes(bot):
+    bot.memory['ban_votes'] = dict()
+    bot.memory['kick_votes'] = dict()
+
 def setup(bot):
   bot.memory['active_users'] = dict()
-  bot.memory['last_votekick'] = datetime.now()
-  bot.memory['ban_votes'] = dict()
-  bot.memory['last_voteban'] = datetime.now()
-  bot.memory['kick_votes'] = dict()
-
-class Modes(Enum):
-    Kick = .5
-    Ban = .66
-    Voice = .25
-    Moderated = .3
-    RegisteredOnly = .4
+  bot.memory['last_vote'] = datetime.now()
+  bot.memory['mode_threshold'] = dict()
+  bot.memory['mode_threshold']['kick'] = 0.5
+  bot.memory['mode_threshold']['ban'] = 0.5
+  bot.memory['mode_threshold']['moderated'] = 0.5
+  bot.memory['mode_threshold']['registered'] = 0.5
+  bot.memory['mode_threshold']['voice'] = 0.5
+  clear_votes(bot)
 
 def prune_active_users(bot):
   for c in bot.memory['active_users']:
@@ -52,12 +53,68 @@ def show_active_users(bot, trigger):
   for u in bot.memory['active_users'][channel]:
     bot.reply("%s" % u)
 
-def calculate_quota(bot, trigger, threshold):
+def calculate_quota(bot, trigger, mode):
   channel = trigger.sender
-  quota = (ceil(len(bot.memory['active_users'][channel])*threshold))
+  quota = (ceil(len(bot.memory['active_users'][channel])*mode))
   return quota
 
-#def votemode(bot, mode):
+def votemode(bot, trigger, mode):
+  make_user_active(bot, trigger)
+  channel = trigger.sender
+  nick = trigger.nick
+  quota = calculate_quota(bot, trigger, bot.memory['mode_threshold'][mode]) 
+  prune_active_users(bot)
+  # This isn't per user but it's probably an OK heuristic
+  if datetime.now() - bot.memory['last_vote'] > timedelta(minutes=5):
+      clear_votes(bot)
+  # Quota is 50% of active users plus one
+  if trigger.group(2):
+    target = str(trigger.group(2)).strip()
+    if not Identifier(target).is_nick():
+      bot.reply("That is not a valid nick")
+      return
+    if target not in bot.privileges[channel]:
+      bot.reply("I don't see that user.")
+      return
+    target_privs = bot.privileges[channel][target]
+    if target_privs > 0:
+     bot.reply("You cannot vote" + mode + " privileged users")
+     return
+    
+    if target in bot.memory[mode+'_votes']:
+      if str(nick) not in bot.memory[mode+'_votes'][target]:
+        bot.memory[mode+'_votes'][target].append(str(nick))
+    else:
+      bot.memory[mode+'_votes'][target] = list()
+      bot.memory[mode+'_votes'][target].append(str(nick))
+    bot.reply("Vote recorded.")
+    
+    if len(bot.memory[mode+'_votes'][target]) > quota:
+      if mode == 'kick':
+        bot.write(['KICK', channel, target], "You have been voted off the island.")
+      elif mode == 'ban':
+        bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
+      elif mode == 'voice':
+        bot.write(['voice', channel, target])
+        bot.say(['voice', channel, target], "%s has been granted voice." % target)
+      elif mode == 'registered':
+        bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
+        bot.say("Channel set to allow only registered users to join for 30 minutes.")
+      elif mode == 'moderated':
+        bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
+        bot.say("Channel set to moderated for 30 minutes.")
+
+    bot.memory['last_vote'] = datetime.now()
+  else:
+    bot.say("Current active vote%s (%s needed to %s): " % (mode, str(quota + 1), mode))
+    for ballot in bot.memory[mode+'_votes']:
+      bot.say("%s has %s %s votes." % (ballot, len(bot.memory[mode+'_votes'][ballot]), mode))
+    return
+
+@require_privilege(VOICE)
+@sopel.module.commands('voteban')
+def voteban(bot, trigger):
+    votemode(bot, trigger, 'ban')
 
 @require_privilege(VOICE)
 @sopel.module.commands('votekick')
@@ -65,7 +122,7 @@ def votekick(bot, trigger):
   make_user_active(bot, trigger)
   channel = trigger.sender
   nick = trigger.nick
-  quota = calculate_quota(bot, trigger, 0.5) 
+  quota = calculate_quota(bot, trigger, Mode.Kick) 
   prune_active_users(bot)
   # This isn't per user but it's probably an OK heuristic
   if datetime.now() - bot.memory['last_votekick'] > timedelta(minutes=5):
