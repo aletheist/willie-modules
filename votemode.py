@@ -22,6 +22,12 @@ def setup(bot):
     bot.memory['mode_threshold']['moderated'] = 0.3
     bot.memory['mode_threshold']['registered'] = 0.4
     bot.memory['mode_threshold']['voice'] = 0.4
+    bot.memory['vote_methods'] = { 'kick': do_kick,
+                                   'ban': do_ban,
+                                   'voice': do_voice,
+                                   'registered': do_registered,
+                                   'moderated': do_moderated
+                                 }
     clear_votes(bot)
 
 def prune_active_users(bot):
@@ -37,7 +43,6 @@ def prune_active_users(bot):
 @sopel.module.rule(r'.*')
 @sopel.module.priority('low')
 def make_user_active(bot, trigger):
-    make_user_active(bot, trigger)
     channel = trigger.sender
     nick = trigger.nick
     if channel not in bot.memory['active_users']:
@@ -47,6 +52,7 @@ def make_user_active(bot, trigger):
 @sopel.module.commands('activeusers')
 @sopel.module.example('.activeusers')
 def show_active_users(bot, trigger):
+    make_user_active(bot, trigger)
     channel = trigger.sender
     nick = trigger.nick
     if channel not in bot.memory['active_users']:
@@ -59,6 +65,21 @@ def calculate_quota(bot, trigger, mode):
     channel = trigger.sender
     quota = max(floor(len(bot.memory['active_users'][channel])*mode), 1)
     return quota
+
+def do_kick(bot, channel, target):
+    bot.write(['KICK', channel, target], "You have been voted off the island.")
+
+def do_ban(bot, channel, target):
+    bot.msg('chanserv', 'AKICK %s ADD %s!*@* !T 30 Users have voted you out of the channel for 30 minutes.' % (channel, target))
+
+def do_voice(bot, channel, target):
+    bot.write(['mode', channel, '+v', target])
+
+def do_registered(bot, channel):
+    pass
+
+def do_moderated(bot, channel):
+    pass
 
 def votemode(bot, trigger, mode):
     make_user_active(bot, trigger)
@@ -91,20 +112,7 @@ def votemode(bot, trigger, mode):
         bot.reply("Vote recorded.")
         
         if len(bot.memory[mode+'_votes'][target]) > quota:
-            if mode == 'kick':
-                bot.write(['KICK', channel, target], "You have been voted off the island.")
-            elif mode == 'ban':
-                bot.msg('chanserv', 'AKICK %s ADD %s!*@* !T 30 Users have voted you out of the channel for 30 minutes.' % (channel, target))
-            elif mode == 'voice':
-                bot.write(['mode', channel, '+v', target])
-                bot.say("%s has been granted voice." % target)
-            elif mode == 'registered':
-                bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
-                bot.say("Channel set to allow only registered users to join for 30 minutes.")
-            elif mode == 'moderated':
-                bot.write(['KICK', channel, target], "You have been banned for 30 minutes.")
-                bot.say("Channel set to moderated for 30 minutes.")
-
+            bot.memory['vote_methods'][mode](bot, channel, target)
         bot.memory['last_vote'] = datetime.now()
     else:
         bot.say("Current active vote%s (%s needed to %s): " % (mode, str(quota + 1), mode))
