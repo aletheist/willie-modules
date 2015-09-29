@@ -35,6 +35,7 @@ def prune_active_users(bot):
 
 @require_privilege(VOICE)
 @sopel.module.rule(r'.*')
+@sopel.module.priority('low')
 def make_user_active(bot, trigger):
     channel = trigger.sender
     nick = trigger.nick
