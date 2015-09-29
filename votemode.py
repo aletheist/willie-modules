@@ -51,9 +51,7 @@ def show_active_users(bot, trigger):
         bot.say("No active users")
         return
     prune_active_users(bot)
-    bot.say("Eligible voters active in %s: " % channel)
-    for u in bot.memory['active_users'][channel]:
-        bot.say("%s" % u)
+    bot.say("There are %s eligible voters active in %s" % (str(len(bot.memory['active_users'][channel])), channel))
 
 def calculate_quota(bot, trigger, mode):
     channel = trigger.sender
