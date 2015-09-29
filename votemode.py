@@ -132,8 +132,9 @@ def votevoice(bot, trigger):
 def nuclear_option(bot, trigger):
     channel = trigger.sender
     nick = trigger.nick
+    bot.say("Bunnies are wonderful creatures. I enjoy watching them frolic.")
+    bot.action('watches the bunnies frolic.')
     if nick != "aletheist":
-        bot.say("Bunnies are wonderful creatures. I enjoy watching them frolic.")
         return
     sleep(5)
     bot.say("Nuclear launch detected.")
