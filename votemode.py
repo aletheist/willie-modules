@@ -7,12 +7,12 @@ from datetime import timedelta
 from time import sleep
 
 def clear_votes(bot):
-    bot.memory['ban_votes'] = dict()
-    bot.memory['kick_votes'] = dict()
-    bot.memory['voice_votes'] = dict()
-    bot.memory['registered_votes'] = dict()
-    bot.memory['moderated_votes'] = dict()
-
+    bot.memory['votes'] = {'kick': dict(),
+                           'ban': dict(),
+                           'voice': dict(),
+                           'registered': dict(),
+                           'moderated': dict()
+                          }
 def setup(bot):
     bot.memory['active_users'] = dict()
     bot.memory['last_vote'] = datetime.now()
@@ -103,21 +103,21 @@ def votemode(bot, trigger, mode):
         if target_privs > 0:
             return bot.reply("You cannot vote" + mode + " privileged users")
         
-        if target in bot.memory[mode+'_votes']:
-            if str(nick) not in bot.memory[mode+'_votes'][target]:
-                bot.memory[mode+'_votes'][target].append(str(nick))
+        if target in bot.memory['votes'][mode]:
+            if str(nick) not in bot.memory['votes'][mode][target]:
+                bot.memory['votes'][mode][target].append(str(nick))
         else:
-            bot.memory[mode+'_votes'][target] = list()
-            bot.memory[mode+'_votes'][target].append(str(nick))
-        bot.reply("Vote recorded.")
+            bot.memory['votes'][mode][target] = [str(nick)]
         
-        if len(bot.memory[mode+'_votes'][target]) > quota:
+        bot.reply("Vote recorded. (%s more votes for action)" % str(quota - len(bot.memory['votes'][mode][target])+1))
+        
+        if len(bot.memory['votes'][mode][target]) > quota:
             bot.memory['vote_methods'][mode](bot, channel, target)
         bot.memory['last_vote'] = datetime.now()
     else:
         bot.say("Current active vote%s (%s needed to %s): " % (mode, str(quota + 1), mode))
-        for ballot in bot.memory[mode+'_votes']:
-            bot.say("%s has %s %s votes." % (ballot, len(bot.memory[mode+'_votes'][ballot]), mode))
+        for ballot in bot.memory['votes'][mode]:
+            bot.say("%s has %s %s votes." % (ballot, len(bot.memory['votes'][mode][ballot]), mode))
         return
 
 @require_privilege(VOICE)
