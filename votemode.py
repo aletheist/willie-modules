@@ -25,13 +25,13 @@ def setup(bot):
     clear_votes(bot)
 
 def prune_active_users(bot):
-    for c in bot.memory['active_users']:
+    for channel in bot.memory['active_users']:
         to_prune = list()
-        for u in bot.memory['active_users'][c]:
-            if bot.memory['active_users'][c][u] + timedelta(minutes=15) < datetime.now():
-                to_prune.append(u)
-        for u in to_prune:
-            del bot.memory['active_users'][c][u]
+        for user in bot.memory['active_users'][channel]:
+            if bot.memory['active_users'][channel][user] + timedelta(minutes=15) < datetime.now():
+                to_prune.append(user)
+        for user in to_prune:
+            del bot.memory['active_users'][channel][user]
 
 @require_privilege(VOICE)
 @sopel.module.rule(r'.*')
