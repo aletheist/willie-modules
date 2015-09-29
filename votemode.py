@@ -37,6 +37,7 @@ def prune_active_users(bot):
 @sopel.module.rule(r'.*')
 @sopel.module.priority('low')
 def make_user_active(bot, trigger):
+    make_user_active(bot, trigger)
     channel = trigger.sender
     nick = trigger.nick
     if channel not in bot.memory['active_users']:
