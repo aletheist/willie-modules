@@ -1,10 +1,10 @@
 import sopel
 from sopel.module import commands, priority, OP, HALFOP, VOICE, require_privilege
 from sopel.tools import Identifier
-from enum import Enum
-from math import ceil
+from math import floor
 from datetime import datetime
 from datetime import timedelta
+from time import sleep
 
 def clear_votes(bot):
     bot.memory['ban_votes'] = dict()
@@ -51,13 +51,11 @@ def show_active_users(bot, trigger):
         bot.say("No active users")
         return
     prune_active_users(bot)
-    bot.say("Eligible voters active in %s: " % channel)
-    for u in bot.memory['active_users'][channel]:
-        bot.say("%s" % u)
+    bot.say("There are %s eligible voters active in %s" % (str(len(bot.memory['active_users'][channel])), channel))
 
 def calculate_quota(bot, trigger, mode):
     channel = trigger.sender
-    quota = (ceil(len(bot.memory['active_users'][channel])*mode))
+    quota = max(floor(len(bot.memory['active_users'][channel])*mode), 1)
     return quota
 
 def votemode(bot, trigger, mode):
@@ -126,4 +124,18 @@ def votekick(bot, trigger):
 @sopel.module.commands('votevoice')
 def votevoice(bot, trigger):
     votemode(bot, trigger, 'voice')
+
+@require_privilege(OP)
+@sopel.module.commands('bunnies')
+def nuclear_option(bot, trigger):
+    channel = trigger.sender
+    nick = trigger.nick
+    bot.say("Bunnies are wonderful creatures. I enjoy watching them frolic.")
+    bot.action('watches the bunnies frolic.')
+    if nick != "aletheist":
+        return
+    sleep(5)
+    bot.say("Nuclear launch detected.")
+    sleep(10)
+    bot.msg('chanserv', 'CLEAR %s USERS Nuclear option executed.' % channel)
 
