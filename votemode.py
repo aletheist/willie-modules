@@ -73,7 +73,7 @@ def show_active_users(bot, trigger):
 
 def calculate_quota(bot, trigger, mode):
     channel = trigger.sender
-    quota = max(floor(len(bot.memory['active_users'][channel])*mode), 1)
+    quota = int(max(floor(len(bot.memory['active_users'][channel])*mode), 1))
     return quota
 
 def do_kick(bot, channel, target):
