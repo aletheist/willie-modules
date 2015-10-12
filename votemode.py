@@ -64,16 +64,16 @@ def make_user_active(bot, trigger):
 @sopel.module.example('.activeusers')
 def show_active_users(bot, trigger):
     make_user_active(bot, trigger)
+    prune_active_users(bot)
     channel = trigger.sender
     if channel not in bot.memory['active_users']:
         bot.say("No active users")
         return
-    prune_active_users(bot)
     bot.say("There are %s eligible voters active in %s" % (str(len(bot.memory['active_users'][channel])), channel))
 
 def calculate_quota(bot, trigger, mode):
     channel = trigger.sender
-    quota = max(floor(len(bot.memory['active_users'][channel])*mode), 1)
+    quota = int(max(floor(len(bot.memory['active_users'][channel])*mode), 1))
     return quota
 
 def do_kick(bot, channel, target):
@@ -106,8 +106,8 @@ def votemode(bot, trigger, mode):
         clear_votes(bot)
     # Quota is 50% of active users plus one
     if trigger.group(2):
-        target = str(trigger.group(2)).strip().lower()
-        if not Identifier(target).is_nick():
+        target = Identifier(str(trigger.group(2)).strip().lower())
+        if not target.is_nick():
             return bot.reply("That is not a valid nick")
         if target not in bot.privileges[channel]:
             return bot.reply("I don't see that user.")
