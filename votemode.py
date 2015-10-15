@@ -59,12 +59,12 @@ def make_user_active(bot, trigger):
         bot.memory['active_users'][channel] = dict()
     bot.memory['active_users'][channel][nick] = datetime.now()
     clear_protection(bot, channel)
+    prune_active_users(bot)
 
 @sopel.module.commands('activeusers')
 @sopel.module.example('.activeusers')
 def show_active_users(bot, trigger):
     make_user_active(bot, trigger)
-    prune_active_users(bot)
     channel = trigger.sender
     if channel not in bot.memory['active_users']:
         bot.say("No active users")
@@ -100,7 +100,6 @@ def votemode(bot, trigger, mode):
     if bot.privileges[trigger.sender][bot.nick] < OP:
         return bot.reply("I'm not a channel operator!")
     quota = calculate_quota(bot, trigger, bot.memory['mode_threshold'][mode])
-    prune_active_users(bot)
     # This isn't per user but it's probably an OK heuristic
     if datetime.now() - bot.memory['last_vote'] > timedelta(minutes=5):
         clear_votes(bot)
