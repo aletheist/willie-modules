@@ -5,7 +5,9 @@ import sopel
 import requests
 from bs4 import BeautifulSoup
 
-passage_re = r'(\d*\s*(?:\w+\s+)+\d+(?::\d+(?:-\d+)?)?)\s?(\w+(?:-\w+)?)?'
+PASSAGE_RE = r'(\d*\s*(?:\w+\s+)+\d+(?::\d+(?:-\d+)?)?)\s?(\w+(?:-\w+)?)?'
+BIBLES_ORG_BASE = 'http://bibles.org/'
+MAX_RETURN_LINES = 5
 
 def setup(bot):
     setup_biblia(bot)
@@ -21,10 +23,6 @@ def setup_biblia(bot):
 
 def setup_bibles_org(bot):
     bot.memory['bibles_versions'] = []
-    #resp = requests.get('https://bibles.org/v2/versions.js', auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
-    #resp = json.loads(resp.text)
-    #for version in resp['response']['versions']:
-    #    bot.memory['bibles_versions'].append(version['id'])
     resp = requests.get('http://m.bibles.org/eng-GNTD/John/1/1/compare')
     page = BeautifulSoup(resp.text)
 
@@ -35,28 +33,47 @@ def setup_bibles_org(bot):
                 bot.memory['bibles_versions'].append(inp['value'])
 
 @sopel.module.commands('b', 'bible')
-@sopel.module.rule('.*\[%s\]' % passage_re)
+@sopel.module.rule('.*\[%s\]' % PASSAGE_RE)
 @sopel.module.example('.b John 1:1')
 @sopel.module.example('.b John 1:1 ESV')
 @sopel.module.thread(True)
 def bible(bot, trigger):
     '''Look up a passage in the bible. You can specify a desired version.'''
-    if trigger.group(1) == 'b' or trigger.group(1) == 'bible':
-        if not trigger.group(2):
-            return bot.reply('No search term. An example: .b John 1:1')
+
+    try:
+        if trigger.group(1) == 'b' or trigger.group(1) == 'bible':
+            if not trigger.group(2):
+                raise NoSearchTermException
+            else:
+                args = re.search(PASSAGE_RE, trigger.group(2))
         else:
-            args = re.search(passage_re, trigger.group(2))
-    else:
-        args = trigger.match
+            args = trigger.match
 
-    version = get_version(bot, trigger, args)
-    if not version:
-        return bot.reply('Specified version not found')
+        if args is None:
+            raise NoSearchTermException
 
-    if version in bot.memory['biblia_versions']:
-        lookup_biblia_com(bot, args.group(1), version)
-    else:
-        lookup_bibles_org(bot, args.group(1), version)
+        passage = args.group(1)
+        if infer_verse_count_from_reference(passage) > MAX_RETURN_LINES:
+            raise PassageTooLongException
+        if not reference_makes_sense(passage):
+            raise NonsensicalReferenceException
+
+        version = get_version(bot, trigger, args)
+        if not version:
+            raise VersionNotFoundException
+
+        cmd = lookup_biblia_com if version in bot.memory['biblia_versions'] else lookup_bibles_org
+        cmd(bot, passage, version)
+    except NothingFoundException:
+        bot.reply('Nothing found!')
+    except NoSearchTermException:
+        bot.reply('No search term. An example: .b John 1:1')
+    except NonsensicalReferenceException:
+        bot.reply('Reference does not make sense')
+    except PassageTooLongException:
+        bot.reply('Passage too long')
+    except VersionNotFoundException:
+        bot.reply('Specified version not found')
 
 @sopel.module.commands('setbver', 'setbiblever', 'setbeaver')
 @sopel.module.example('.setbver ESV')
@@ -77,11 +94,11 @@ def set_preferred_version(bot, trigger):
 
         bot.db.set_nick_value(target, 'preferred_versions', version)
 
-        return bot.reply('Set preferred version of ' + target + ' to ' + version)
+        return bot.reply('Set preferred version of ' + target + ' to ' + filter_language_prefix(version))
 
 @sopel.module.commands('getbver', 'getbiblever', 'getbeaver')
 def get_preferred_version(bot, trigger):
-    return bot.reply('Your preferred version is ' + get_default_version(bot, trigger))
+    return bot.reply('Your preferred version is ' + filter_language_prefix(get_default_version(bot, trigger)))
 
 @sopel.module.commands('bver', 'biblever', 'beaver')
 @sopel.module.priority('low')
@@ -91,56 +108,69 @@ def get_versions(bot, trigger):
     versions = ', '.join(sorted(set(bot.memory['biblia_versions'] + bot.memory['bibles_versions'])))
     if not trigger.is_privmsg:
         bot.reply("I am sending you a private message of all my Bible versions!")
-    bot.msg(trigger.nick, 'Bible versions I recognise: ' + versions + '.', max_messages=10)
+    bot.msg(trigger.nick, 'Bible versions I recognize:')
+    bot.msg(trigger.nick, 'From biblia.com: ' + ', '.join(sorted(list_omit_if_language_prefix(bot.memory['biblia_versions']))) + '.', max_messages=MAX_RETURN_LINES)
+    bot.msg(trigger.nick, 'From bibles.org: ' + ', '.join(sorted(list_filter_language_prefix(bot.memory['bibles_versions']))) + '.', max_messages=MAX_RETURN_LINES)
 
 def lookup_bibles_org(bot, passage, version):
-    resp = requests.get('https://bibles.org/v2/passages.js', params={ 'q[]': passage, 'version': version }, auth=requests.auth.HTTPBasicAuth('YmAvbTvxEBxzbLedltkKdqun0UPw7GXIYX35fhWD', 'X'))
+    resp = requests.get(BIBLES_ORG_BASE + version + '/passages.json', params={ 'q[]': passage })
     resp = json.loads(resp.text)
-    if len(resp['response']['search']['result']['passages']) > 0:
-        text = resp['response']['search']['result']['passages'][0]['text']
 
-        text = text.replace('\n', '')
-        text = re.sub(r'<h\d(?: \w+="[\w\d\.]+")+>.+?</h\d>', '', text)
-        text = re.sub(r'<p(?: \w+="[\w\d\.]+")+>', '', text)
-        text = re.sub(r'</p>', '', text)
-        while re.search(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', text) is not None:
-            text = re.sub(r'<span(?: \w+="[\w\d\.]+")+>(.+?)</span>', r'\1', text)
+    if len(resp['passages']) == 0:
+        raise NothingFoundException
 
-        #copyright = None
-        #try:
-        #    copyright = resp['response']['search']['result']['passages'][0]['copyright'].lstrip().rstrip().replace('\n', '').replace('<p>', '').replace('</p>', '')
-        #except:
-        #    pass
+    passage_id   = resp['passages'][0]['id']
+    verses_range = [ int(x) for x in resp['passages'][0]['url'].split('/')[-1].split('-') ]
+    book_abbrev  = passage_id.split('.')[0].split(':')[1]
+    chapter_num  = passage_id.split('.')[1]
+    reference    = resp['passages'][0]['reference']
+    if infer_verse_count_from_reference(reference) > MAX_RETURN_LINES:
+        raise PassageTooLongException
+    version_api  = passage_id.split('.')[0].split(':')[0].split('-')[1]
 
-        verses = re.split(r'<sup(?: \w+="[\w\d\.-]+")+>[\d-]+</sup>', text)
+    if len(verses_range) > 1:
+        verses_range = range(verses_range[0], verses_range[1] + 1)
 
-        verses = [ x for x in verses if x != '' ]
+    resp = requests.get(BIBLES_ORG_BASE + 'chapters/' + passage_id + '.json')
+    resp = json.loads(resp.text)
 
-        if len(verses) > 5:
-            bot.reply('passage too long')
-        else:
-            bot.say(resp['response']['search']['result']['passages'][0]['display'] + ' (' + resp['response']['search']['result']['passages'][0]['version_abbreviation'] + ')')
-            for verse in verses:
-                bot.say(verse)
-            #if copyright is not None:
-            #    bot.say(copyright)
-    else:
-        bot.reply('nothing found!')
+    page = BeautifulSoup(resp['text'])
+    span_ref_base = page.find('span', { 'class': re.compile('v\d+') }).attrs['class'][0].split('_')[0]
+
+    verses = []
+
+    for v_num in verses_range:
+        span_class = '_'.join([ span_ref_base, chapter_num, str(v_num) ])
+        spans = page.findAll('span', { 'class': span_class })
+        if len(spans) > 0:
+            verse_parts = []
+            for span in spans:
+                [ x.extract() for x in span.findAll('sup') ]
+                [ x.extract() for x in span.findAll('a', { 'class': 'notelink' }) ]
+                [ verse_parts.append(x) for x in span.stripped_strings ]
+            verses.append(' '.join(verse_parts))
+
+    if len(verses) > MAX_RETURN_LINES:
+        raise PassageTooLongException
+
+    bot.say(reference + ' (' + version_api + ')')
+    for verse in verses:
+        bot.say(verse)
 
 def lookup_biblia_com(bot, passage, version):
     resp = requests.get('http://api.biblia.com/v1/bible/content/' + version + '.txt', params={ 'passage': passage, 'key': 'fd37d8f28e95d3be8cb4fbc37e15e18e', 'style': 'oneVersePerLine' })
     lines = [ re.sub('^\d+', '', x).strip() for x in resp.text.encode('utf-8').split('\r\n') ]
     if lines == [''] or len(lines) == 1:
-        bot.reply('nothing found!')
-    else:
-        ref = lines[0]
-        verses = lines[1:]
-        if len(verses) > 5:
-            bot.reply('passage too long')
-        else:
-            bot.say(ref)
-            for verse in verses:
-                bot.say(verse)
+        raise NothingFoundException
+
+    ref = lines[0]
+    verses = lines[1:]
+    if len(verses) > MAX_RETURN_LINES:
+        raise PassageTooLongException
+
+    bot.say(ref)
+    for verse in verses:
+        bot.say(verse)
 
 def get_version(bot, trigger, args, allow_blank=True):
     if not args.group(2):
@@ -149,10 +179,11 @@ def get_version(bot, trigger, args, allow_blank=True):
         else:
             return False
     else:
-        if args.group(2) in bot.memory['biblia_versions'] or args.group(2) in bot.memory['bibles_versions']:
-            return args.group(2)
-        elif 'eng-' + args.group(2) in bot.memory['bibles_versions']:
-            return 'eng-' + args.group(2)
+        req_version = args.group(2).upper()
+        if req_version in bot.memory['biblia_versions'] or req_version in bot.memory['bibles_versions']:
+            return req_version
+        elif 'eng-' + req_version in bot.memory['bibles_versions']:
+            return 'eng-' + req_version
         else:
             return False
 
@@ -163,3 +194,44 @@ def get_default_version(bot, trigger):
         return bot.db.get_nick_value(trigger.sender,'preferred_versions')
     else:
         return 'KJV'
+
+def infer_verse_count_from_reference(reference):
+    if len(reference.split(':')) > 1:
+        verse_part = reference.split(':')[1]
+        if len(verse_part.split('-')) > 1:
+            verse_range = [ int(x) for x in verse_part.split('-') ]
+            return verse_range[1] - verse_range[0] + 1
+    return 0
+
+def reference_makes_sense(reference):
+    if len(reference.split(':')) > 1:
+        verse_part = reference.split(':')[1]
+        if len(verse_part.split('-')) > 1:
+            verse_range = [ int(x) for x in verse_part.split('-') ]
+            if verse_range[1] <= verse_range[0]:
+                return False
+    return True
+
+def filter_language_prefix(x):
+    return x.split('-')[1] if x.find('-') != -1 else x
+
+def list_filter_language_prefix(l):
+    return [ x.split('-')[1] for x in l ]
+
+def list_omit_if_language_prefix(l):
+    return [ x for x in l if x.find('-') == -1 ]
+
+class NothingFoundException(Exception):
+    pass
+
+class NoSearchTermException(Exception):
+    pass
+
+class NonsensicalReferenceException(Exception):
+    pass
+
+class PassageTooLongException(Exception):
+    pass
+
+class VersionNotFoundException(Exception):
+    pass
