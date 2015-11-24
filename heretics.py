@@ -152,3 +152,4 @@ def denounced(bot, trigger):
             report = report + ', and has defended: ' + string
 
     bot.say(report)
+    
