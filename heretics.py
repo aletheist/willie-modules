@@ -2,8 +2,8 @@ import functools
 import operator
 import sopel
 
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? heretic\b')
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are heretics\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are (heretic|haeretic|haeretick|heretick|heretike)s\b')
 def denounce_heretic(bot, trigger):
     target = trigger.group(1)
     nick = trigger.nick
@@ -28,8 +28,8 @@ def denounce_heretic(bot, trigger):
     set_heretic_values(bot, target, channel, denounce_history, defense_history)
     bot.say('noted')
 
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? heretic\b')
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not heretics\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
+@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not (heretic|haeretic|haeretick|heretick|heretike)s\b')
 def deny_heresy(bot, trigger):
     target = trigger.group(1)
     nick = trigger.nick
@@ -152,3 +152,4 @@ def denounced(bot, trigger):
             report = report + ', and has defended: ' + string
 
     bot.say(report)
+    
