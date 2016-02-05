@@ -132,11 +132,11 @@ def votemode(bot, trigger, mode):
         clear_votes(bot)
     # Quota is 50% of active users plus one
     if trigger.group(2):
-        target = Identifier(str(trigger.group(2)).strip().lower())
+        target = Identifier(str(trigger.group(2)).split()[0].strip().lower())
         if not target.is_nick():
             return bot.reply("That is not a valid nick")
         if target not in bot.privileges[channel]:
-            return bot.reply("I don't see that user.")
+            return bot.reply("I don't see %s." % target)
         target_privs = bot.privileges[channel][target]
         if target_privs > 0:
             return bot.reply("You cannot vote" + mode + " privileged users")
