@@ -10,12 +10,14 @@ def clear_votes(bot):
     bot.memory['votes'] = {'kick': dict(),
                            'ban': dict(),
                            'voice': dict(),
+                           'quiet': dict(),
                            'registered': list(),
                            'moderated': list()
                           }
 
 def setup(bot):
     bot.memory['active_users'] = dict()
+    bot.memory['quiet_users'] = dict()
     bot.memory['last_vote'] = datetime.now()
     bot.memory['mode_threshold'] = dict()
     bot.memory['mode_threshold']['kick'] = 0.5
@@ -23,9 +25,11 @@ def setup(bot):
     bot.memory['mode_threshold']['moderated'] = 0.3
     bot.memory['mode_threshold']['registered'] = 0.4
     bot.memory['mode_threshold']['voice'] = 0.4
+    bot.memory['mode_threshold']['quiet'] = 0.5
     bot.memory['vote_methods'] = {'kick': do_kick,
                                   'ban': do_ban,
                                   'voice': do_voice,
+                                  'quiet': do_quiet,
                                   'registered': do_registered,
                                   'moderated': do_moderated
                                  }
@@ -49,6 +53,23 @@ def clear_protection(bot, channel):
         bot.write(['mode', channel, '-r'])
         bot.write(['mode', channel, '-m'])
 
+#clear quiets and prune_active_users use the same logic and could just be a
+#single function
+def clear_quiets(bot):
+    for channel in bot.memory['quiet_users']:
+        to_prune = list()
+        for user in bot.memory['quiet_users'][channel]:
+            if bot.memory['quiet_users'][channel][user] + timedelta(minutes=30) < datetime.now():
+                to_prune.append(user)
+        for user in to_prune:
+            bot.write(['mode', channel, '-q', user])
+            del bot.memory['quiet_users'][channel][user]
+
+def make_user_quiet(bot,channel, nick):
+    if channel not in bot.memory['quiet_users']:
+        bot.memory['quiet_users'][channel] = dict()
+    bot.memory['quiet_users'][channel][nick] = datetime.now()
+
 @require_privilege(VOICE)
 @sopel.module.rule(r'.*')
 @sopel.module.priority('low')
@@ -59,6 +80,7 @@ def make_user_active(bot, trigger):
         bot.memory['active_users'][channel] = dict()
     bot.memory['active_users'][channel][nick] = datetime.now()
     clear_protection(bot, channel)
+    clear_quiets(bot)
     prune_active_users(bot)
 
 @sopel.module.commands('activeusers')
@@ -80,9 +102,14 @@ def do_kick(bot, channel, target):
     bot.write(['KICK', channel, target], "You have been voted off the island.")
 
 def do_ban(bot, channel, target):
-    bot.msg('chanserv', 'AKICK %s ADD %s!*@* !T 30 Users have voted you out of the channel for 30 minutes.' % (channel, target))
+    bot.msg('chanserv', 'AKICK %s ADD %s!*@* !T 120 Users have voted you out of the channel for 2 hours.' % (channel, target))
+
+def do_quiet(bot, channel, target):
+    make_user_quiet(bot, channel, target)
+    bot.write(['mode', channel, '+q', target])
 
 def do_voice(bot, channel, target):
+    bot.write(['mode', channel, '-q', target])
     bot.write(['mode', channel, '+v', target])
 
 def do_registered(bot, channel):
@@ -141,27 +168,32 @@ def votemode(bot, trigger, mode):
         return
 
 @require_privilege(VOICE)
-@sopel.module.commands('voteban')
+@sopel.module.commands('voteban', 'voteb')
 def voteban(bot, trigger):
     votemode(bot, trigger, 'ban')
 
 @require_privilege(VOICE)
-@sopel.module.commands('votekick')
+@sopel.module.commands('votekick', 'votek')
 def votekick(bot, trigger):
     votemode(bot, trigger, 'kick')
 
 @require_privilege(VOICE)
-@sopel.module.commands('votevoice')
+@sopel.module.commands('votevoice', 'votev')
 def votevoice(bot, trigger):
     votemode(bot, trigger, 'voice')
 
 @require_privilege(VOICE)
-@sopel.module.commands('voteregistered')
+@sopel.module.commands('votequiet', 'voteq')
+def votequiet(bot, trigger):
+    votemode(bot, trigger, 'quiet')
+
+@require_privilege(VOICE)
+@sopel.module.commands('voteregistered', 'voter')
 def voteregistered(bot, trigger):
     votemode(bot, trigger, 'registered')
 
 @require_privilege(VOICE)
-@sopel.module.commands('votemoderated')
+@sopel.module.commands('votemoderated', 'votem')
 def votemoderated(bot, trigger):
     votemode(bot, trigger, 'moderated')
 
