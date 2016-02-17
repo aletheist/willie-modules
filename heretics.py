@@ -120,6 +120,8 @@ def denounced(bot, trigger):
         target = trigger.group(2)
         denounced = bot.db.get_channel_value(channel, 'denounce_%s' % str(target)) or []
         defended = bot.db.get_channel_value(channel, 'defense_%s' % str(target)) or []
+        denounced=sorted(denounced, key=lambda s: s.lower())
+        defended=sorted(defended, key=lambda s: s.lower())
 
         if len(denounced) == 0:
             report = report + 'No one has denounced ' + target
@@ -138,6 +140,8 @@ def denounced(bot, trigger):
         nick = trigger.nick
         denounced = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'denounce_%s' % str(t))]
         defended = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'defense_%s' % str(t))]
+        denounced=sorted(denounced, key=lambda s: s.lower())
+        defended=sorted(defended, key=lambda s: s.lower())
         
         if len(denounced) == 0:
             report = report + nick + ' has not denounced anything'
