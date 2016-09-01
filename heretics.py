@@ -2,11 +2,20 @@ import functools
 import operator
 import sopel
 
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are (heretic|haeretic|haeretick|heretick|heretike)s\b')
+def setup(bot):
+    bot.cap_req('votemode', 'extended-join')
+    bot.cap_req('votemode', 'account-notify')
+
+@sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
+@sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) are (heretic|haeretic|haeretick|heretick|heretike)s\b')
 def denounce_heretic(bot, trigger):
+    bot.say("Attempting to denounce heretic")
     target = trigger.group(1)
-    nick = trigger.nick
+    if trigger.account is None:
+        return
+    else:
+        nick = trigger.account
+
     channel = trigger.sender
 
     # Initialize the heretic
@@ -28,12 +37,15 @@ def denounce_heretic(bot, trigger):
     set_heretic_values(bot, target, channel, denounce_history, defense_history)
     bot.say('noted')
 
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
-@sopel.module.rule(r'\b([a-zA-Z][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not (heretic|haeretic|haeretick|heretick|heretike)s\b')
+@sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) is not a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
+@sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) are not (heretic|haeretic|haeretick|heretick|heretike)s\b')
 def deny_heresy(bot, trigger):
-    target = trigger.group(1)
-    nick = trigger.nick
     channel = trigger.sender
+    target = trigger.group(1)
+    if trigger.account is None:
+        return
+    else:
+        nick = trigger.account
 
     # Initialize the heretic
     denounce_key = 'denounce_%s' % str(target)
@@ -101,10 +113,15 @@ def heretics(bot, trigger):
 @sopel.module.example('.heretic Spong')
 def heretic(bot, trigger):
     '''Shows the "heretic score" of the given target, or the user if no target is given.'''
-    target = trigger.nick
     channel = trigger.sender
     if trigger.group(2):
         target = trigger.group(2)
+    else:
+        target = trigger.account
+
+    if target is None:
+        bot.say("You must be authed to services to use this command.")
+        return
 
     total = score(target, bot, channel)[1]
     bot.say(target + ' (' + str(total) + ' denunciation' + ('s' if total != 1 else '') + ')')
@@ -137,7 +154,10 @@ def denounced(bot, trigger):
 
     else:
         all_heretics = bot.db.get_channel_value(channel, 'heretics')
-        nick = trigger.nick
+        nick = trigger.account
+        if nick is None:
+            bot.say("You must be authed to services to use this command.")
+            return
         denounced = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'denounce_%s' % str(t))]
         defended = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'defense_%s' % str(t))]
         denounced=sorted(denounced, key=lambda s: s.lower())
