@@ -16,6 +16,8 @@ def clear_votes(bot):
                           }
 
 def setup(bot):
+    bot.cap_req('votemode', 'extended-join')
+    bot.cap_req('votemode', 'account-notify')
     bot.memory['active_users'] = dict()
     bot.memory['quiet_users'] = dict()
     bot.memory['last_vote'] = datetime.now()
@@ -75,7 +77,9 @@ def make_user_quiet(bot,channel, nick):
 @sopel.module.priority('low')
 def make_user_active(bot, trigger):
     channel = trigger.sender
-    nick = trigger.nick
+    nick = trigger.account
+    if nick is None:
+        return
     if channel not in bot.memory['active_users']:
         bot.memory['active_users'][channel] = dict()
     bot.memory['active_users'][channel][nick] = datetime.now()
@@ -123,7 +127,10 @@ def do_moderated(bot, channel):
 def votemode(bot, trigger, mode):
     make_user_active(bot, trigger)
     channel = trigger.sender
-    nick = trigger.nick
+    nick = trigger.account
+    if nick is None:
+        bot.say("You must be authed to use this command")
+        return
     if bot.privileges[trigger.sender][bot.nick] < OP:
         return bot.reply("I'm not a channel operator!")
     quota = calculate_quota(bot, trigger, bot.memory['mode_threshold'][mode])
