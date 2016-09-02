@@ -9,12 +9,11 @@ def setup(bot):
 @sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
 @sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) are (heretic|haeretic|haeretick|heretick|heretike)s\b')
 def denounce_heretic(bot, trigger):
-    bot.say("Attempting to denounce heretic")
     target = trigger.group(1)
     if trigger.account is None:
         return
     else:
-        nick = trigger.account
+        account = trigger.account
 
     channel = trigger.sender
 
@@ -28,11 +27,11 @@ def denounce_heretic(bot, trigger):
         defense_history = []
 
     # Now actually do the work.
-    if nick in defense_history:
-        defense_history.remove(nick)
+    if account in defense_history:
+        defense_history.remove(account)
 
-    if nick not in denounce_history:
-        denounce_history.append(nick)
+    if account not in denounce_history:
+        denounce_history.append(account)
 
     set_heretic_values(bot, target, channel, denounce_history, defense_history)
     bot.say('noted')
@@ -45,7 +44,7 @@ def deny_heresy(bot, trigger):
     if trigger.account is None:
         return
     else:
-        nick = trigger.account
+        account = trigger.account
 
     # Initialize the heretic
     denounce_key = 'denounce_%s' % str(target)
@@ -57,11 +56,11 @@ def deny_heresy(bot, trigger):
         defense_history = []
 
     # Now actually do the work.
-    if nick in denounce_history:
-        denounce_history.remove(nick)
+    if account in denounce_history:
+        denounce_history.remove(account)
 
-    if nick not in defense_history:
-        defense_history.append(nick)
+    if account not in defense_history:
+        defense_history.append(account)
 
     set_heretic_values(bot, target, channel, denounce_history, defense_history)
     bot.say('noted')
@@ -154,20 +153,20 @@ def denounced(bot, trigger):
 
     else:
         all_heretics = bot.db.get_channel_value(channel, 'heretics')
-        nick = trigger.account
-        if nick is None:
+        account = trigger.account
+        if account is None:
             bot.say("You must be authed to services to use this command.")
             return
-        denounced = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'denounce_%s' % str(t))]
-        defended = [t for t in all_heretics if nick in bot.db.get_channel_value(channel, 'defense_%s' % str(t))]
+        denounced = [t for t in all_heretics if account in bot.db.get_channel_value(channel, 'denounce_%s' % str(t))]
+        defended = [t for t in all_heretics if account in bot.db.get_channel_value(channel, 'defense_%s' % str(t))]
         denounced=sorted(denounced, key=lambda s: s.lower())
         defended=sorted(defended, key=lambda s: s.lower())
         
         if len(denounced) == 0:
-            report = report + nick + ' has not denounced anything'
+            report = report + account + ' has not denounced anything'
         else:
             string = ", ".join(denounced)
-            report = report + nick + ' has denounced: ' + string
+            report = report + account + ' has denounced: ' + string
 
         if len(defended) == 0:
             report = report + ', and has not defended anything.'
