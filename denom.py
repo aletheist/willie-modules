@@ -29,7 +29,6 @@ def set_denom(bot, trigger):
   elif len(denom) > length_limit:
     bot.reply('Denomination name too long. (Limit %s characters)' % str(length_limit))
   else:
-    print(person,str(account))
     try:
       # First we try to unalias the nick
       bot.db.unalias_nick(trigger.nick)
@@ -41,7 +40,6 @@ def set_denom(bot, trigger):
         pass
     except ValueError as e:
       # If it's not an alias, we merge instead
-      print(bot.db.get_nick_id(account), bot.db.get_nick_id(trigger.nick))
       bot.db.merge_nick_groups(account, trigger.nick)
       
     bot.db.set_nick_value(account, 'denom', denom)
