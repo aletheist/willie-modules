@@ -1,9 +1,6 @@
 import random
 import datetime
 import sopel
-import threading
-
-nickserv_lock = threading.Lock()
 
 def setup(bot):
     bot.cap_req('votemode', 'extended-join')
