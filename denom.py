@@ -3,8 +3,8 @@ import datetime
 import sopel
 
 def setup(bot):
-    bot.cap_req('votemode', 'extended-join')
-    bot.cap_req('votemode', 'account-notify')
+    bot.cap_req('denom', 'extended-join')
+    bot.cap_req('denom', 'account-notify')
     if not bot.memory.contains('denom_nick_last_query'):
         bot.memory['denom_nick_last_query'] = sopel.tools.SopelMemory()
     if not bot.memory.contains('denom_nick_fast_query_count'):
@@ -12,12 +12,31 @@ def setup(bot):
     if not bot.memory.contains('denom_nick_reply_via_message'):
         bot.memory['denom_nick_reply_via_message'] = sopel.tools.SopelMemory()
 
+def claim_nick(bot, account, alias):
+  if account is None:
+    return
+  if account.lower() == alias.lower():
+    return
+  try:
+    # First we try to unalias the person
+    bot.db.unalias_nick(alias)
+    if account != alias:
+      try:
+        # If we were able to unalias, now stick that nick on the new account
+        # Someone can steal a nick within the ghosting time limit unfortunately
+        bot.db.alias_nick(account, alias)
+      except ValueError as e:
+        pass
+  except ValueError as e:
+    # If it's not an alias, we merge instead
+    bot.db.merge_nick_groups(account, alias) 
+
 @sopel.module.commands('setdenom', 'mydenom')
 @sopel.module.example('.setdenom Lutheran')
 def set_denom(bot, trigger):
   '''Set a user's denomination'''
   length_limit = 128
-  person = str(trigger.nick).lower()
+  person = str(trigger.nick)
   account = trigger.account
   sender = trigger.sender
   denom = 'Trout'
@@ -28,32 +47,19 @@ def set_denom(bot, trigger):
     bot.msg(sender, 'Sorry, you need to be authed to services to use this command.')
   elif len(denom) > length_limit:
     bot.reply('Denomination name too long. (Limit %s characters)' % str(length_limit))
-  elif trigger.nick is account:
-      bot.db.set_nick_value(account, 'denom', denom)
-      bot.msg(sender, 'Got it: %s is %s' % (person, denom))
   else:
-    try:
-      # First we try to unalias the nick
-      bot.db.unalias_nick(trigger.nick)
-      try:
-        # If we were able to unalias, now stick that nick on the new account
-        # Someone can steal a nick within the ghosting time limit unfortunately
-        bot.db.alias_nick(account, trigger.nick)
-      except ValueError as e:
-        pass
-    except ValueError as e:
-      # If it's not an alias, we merge instead
-      bot.db.merge_nick_groups(account, trigger.nick)
-      
+    claim_nick(bot, account, person)
     bot.db.set_nick_value(account, 'denom', denom)
     bot.msg(sender, 'Got it: %s is %s' % (person, denom))
 
 @sopel.module.commands('denom', 'getdenom')
 @sopel.module.example('.denom mstark')
 def get_denom(bot, trigger):
-  person = str(trigger.nick)
   if trigger.group(2):
     person = trigger.group(2)
+  else:
+    person = str(trigger.nick)
+    claim_nick(bot, trigger.account, person)
 
   reply_via_msg = False
 
