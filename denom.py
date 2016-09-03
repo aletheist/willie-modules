@@ -28,6 +28,9 @@ def set_denom(bot, trigger):
     bot.msg(sender, 'Sorry, you need to be authed to services to use this command.')
   elif len(denom) > length_limit:
     bot.reply('Denomination name too long. (Limit %s characters)' % str(length_limit))
+  elif trigger.nick is account:
+      bot.db.set_nick_value(account, 'denom', denom)
+      bot.msg(sender, 'Got it: %s is %s' % (person, denom))
   else:
     try:
       # First we try to unalias the nick
