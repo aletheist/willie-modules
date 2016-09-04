@@ -1,6 +1,7 @@
 import random
 import datetime
 import sopel
+from sopel.tools import Identifier
 
 def setup(bot):
     bot.cap_req('denom', 'extended-join')
@@ -59,6 +60,11 @@ def get_denom(bot, trigger):
     person = trigger.group(2)
   else:
     person = str(trigger.nick)
+  try:
+    target_account = str(bot.users[Identifier(person)].account)
+  except:
+    target_account = None
+  if target_account == trigger.account:
     claim_nick(bot, trigger.account, person)
 
   reply_via_msg = False
