@@ -14,7 +14,7 @@ def setup(bot):
         bot.memory['denom_nick_reply_via_message'] = sopel.tools.SopelMemory()
 
 def claim_nick(bot, account, alias):
-  if account is None:
+  if account is None or alias is None:
     return
   if account.lower() == alias.lower():
     return
