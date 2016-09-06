@@ -16,6 +16,8 @@ def clear_votes(bot):
                           }
 
 def setup(bot):
+    bot.cap_req('votemode', 'extended-join')
+    bot.cap_req('votemode', 'account-notify')
     bot.memory['active_users'] = dict()
     bot.memory['quiet_users'] = dict()
     bot.memory['last_vote'] = datetime.now()
@@ -75,10 +77,12 @@ def make_user_quiet(bot,channel, nick):
 @sopel.module.priority('low')
 def make_user_active(bot, trigger):
     channel = trigger.sender
-    nick = trigger.nick
+    account = trigger.account
+    if account is None:
+        return
     if channel not in bot.memory['active_users']:
         bot.memory['active_users'][channel] = dict()
-    bot.memory['active_users'][channel][nick] = datetime.now()
+    bot.memory['active_users'][channel][account] = datetime.now()
     clear_protection(bot, channel)
     clear_quiets(bot)
     prune_active_users(bot)
@@ -123,7 +127,10 @@ def do_moderated(bot, channel):
 def votemode(bot, trigger, mode):
     make_user_active(bot, trigger)
     channel = trigger.sender
-    nick = trigger.nick
+    account = trigger.account
+    if account is None:
+        bot.say("You must be authed to use this command")
+        return
     if bot.privileges[trigger.sender][bot.nick] < OP:
         return bot.reply("I'm not a channel operator!")
     quota = calculate_quota(bot, trigger, bot.memory['mode_threshold'][mode])
@@ -142,10 +149,10 @@ def votemode(bot, trigger, mode):
             return bot.reply("You cannot vote" + mode + " privileged users")
 
         if target in bot.memory['votes'][mode]:
-            if str(nick) not in bot.memory['votes'][mode][target]:
-                bot.memory['votes'][mode][target].append(str(nick))
+            if str(account) not in bot.memory['votes'][mode][target]:
+                bot.memory['votes'][mode][target].append(str(account))
         else:
-            bot.memory['votes'][mode][target] = [str(nick)]
+            bot.memory['votes'][mode][target] = [str(account)]
 
         bot.reply("Vote recorded. (%s more votes for action)" % str(max(0, quota - len(bot.memory['votes'][mode][target])+1)))
 
@@ -153,10 +160,10 @@ def votemode(bot, trigger, mode):
             bot.memory['vote_methods'][mode](bot, channel, target)
         bot.memory['last_vote'] = datetime.now()
     elif mode == "registered" or mode == "moderated":
-        if str(nick) not in bot.memory['votes'][mode]:
-            bot.memory['votes'][mode].append(str(nick))
+        if str(account) not in bot.memory['votes'][mode]:
+            bot.memory['votes'][mode].append(str(account))
         else:
-            bot.memory['votes'][mode] = [str(nick)]
+            bot.memory['votes'][mode] = [str(account)]
         bot.reply("Vote recorded. (%s more votes for action)" % str(max(0, quota - len(bot.memory['votes'][mode])+1)))
         if len(bot.memory['votes'][mode]) > quota:
             bot.memory['vote_methods'][mode](bot, channel)
