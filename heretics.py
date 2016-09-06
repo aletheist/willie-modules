@@ -3,8 +3,8 @@ import operator
 import sopel
 
 def setup(bot):
-    bot.cap_req('votemode', 'extended-join')
-    bot.cap_req('votemode', 'account-notify')
+    bot.cap_req('heretics', 'extended-join')
+    bot.cap_req('heretics', 'account-notify')
 
 @sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) is a(?:n)? (heretic|haeretic|haeretick|heretick|heretike)\b')
 @sopel.module.rule(r'\b([a-zA-Z_][a-zA-Z0-9\[\]\-\\`^{}\_]*) are (heretic|haeretic|haeretick|heretick|heretike)s\b')
