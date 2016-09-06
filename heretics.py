@@ -11,6 +11,7 @@ def setup(bot):
 def denounce_heretic(bot, trigger):
     target = trigger.group(1)
     if trigger.account is None:
+        bot.say('not noted')
         return
     else:
         account = trigger.account
@@ -42,6 +43,7 @@ def deny_heresy(bot, trigger):
     channel = trigger.sender
     target = trigger.group(1)
     if trigger.account is None:
+        bot.say('not noted')
         return
     else:
         account = trigger.account
