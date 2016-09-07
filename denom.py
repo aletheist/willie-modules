@@ -48,10 +48,7 @@ def set_denom(bot, trigger):
     bot.msg(sender, 'Sorry, you need to be authed to services to use this command.')
   elif len(denom) > length_limit:
     bot.reply('Denomination name too long. (Limit %s characters)' % str(length_limit))
-  elif person.lower() != account.lower():
-    bot.reply('You may only use setdenom while your nick matches your NickServ account name.')
   else:
-    claim_nick(bot, account, person)
     bot.db.set_nick_value(account, 'denom', denom)
     bot.msg(sender, 'Got it: %s is %s' % (person, denom))
 
