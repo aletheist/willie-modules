@@ -49,7 +49,6 @@ def set_denom(bot, trigger):
   elif len(denom) > length_limit:
     bot.reply('Denomination name too long. (Limit %s characters)' % str(length_limit))
   else:
-    claim_nick(bot, account, person)
     bot.db.set_nick_value(account, 'denom', denom)
     bot.msg(sender, 'Got it: %s is %s' % (person, denom))
 
@@ -63,9 +62,9 @@ def get_denom(bot, trigger):
   try:
     target_account = str(bot.users[Identifier(person)].account)
   except:
-    target_account = None
-  if target_account == trigger.account:
-    claim_nick(bot, trigger.account, person)
+    bot.reply("I don't see %s"%person)
+    return
+  denom = bot.db.get_nick_value(target_account, 'denom')
 
   reply_via_msg = False
 
@@ -94,13 +93,13 @@ def get_denom(bot, trigger):
             reply_via_msg = True
 
   if reply_via_msg:
-    if bot.db.get_nick_value(person,'denom'):
-      bot.msg(person, '%s is %s' % (person, bot.db.get_nick_value(person,'denom')))
+    if denom is not None:
+      bot.msg(person, '%s is %s' % (person, denom))
     else:
       bot.msg(person, 'I don\'t know what %s is.' % person)
   else:
-    if bot.db.get_nick_value(person,'denom'):
-      bot.reply('%s is %s' % (person, bot.db.get_nick_value(person,'denom')))
+    if denom is not None:
+      bot.reply('%s is %s' % (person, denom))
     else:
       bot.reply('I don\'t know what %s is.' % person)
 
