@@ -29,7 +29,7 @@ def say_honor(bot, orig_topic, topic, word):
         bot.say(orig_topic + ' is without ' + word)
     else:
         hasher = hashlib.md5()
-        hasher.update(topic)
+        hasher.update(topic.encode('utf-8'))
         if hasher.hexdigest()[-1] in ['0', '1', '2', '3', '4', '5', '6', '7']:
             bot.say(orig_topic + ' has ' + word)
         else:
