@@ -16,7 +16,7 @@ def setup(bot):
 def setup_biblia(bot):
     bot.memory['biblia_versions'] = []
     versions_html = requests.get('http://bibliaapi.com/docs/Available_Bibles')
-    versions_page = BeautifulSoup(versions_html.text)
+    versions_page = BeautifulSoup(versions_html.text, features="html.parser")
     for tr in versions_page.find('table').find_all('tr'):
         if tr.find('th') is None:
             bot.memory['biblia_versions'].append(tr.find_all('td')[0].text.strip())
@@ -24,7 +24,7 @@ def setup_biblia(bot):
 def setup_bibles_org(bot):
     bot.memory['bibles_versions'] = []
     resp = requests.get('http://m.bibles.org/eng-GNTD/John/1/1/compare')
-    page = BeautifulSoup(resp.text)
+    page = BeautifulSoup(resp.text, features="html.parser")
 
     version_list = page.find('ul', id='whichVersionList')
     for li in version_list.find_all('li'):
@@ -134,7 +134,7 @@ def lookup_bibles_org(bot, passage, version):
     resp = requests.get(BIBLES_ORG_BASE + 'chapters/' + passage_id + '.json')
     resp = json.loads(resp.text)
 
-    page = BeautifulSoup(resp['text'])
+    page = BeautifulSoup(resp['text'], features="html.parser")
     span_ref_base = page.find('span', { 'class': re.compile('v\d+') }).attrs['class'][0].split('_')[0]
 
     verses = []
@@ -159,7 +159,7 @@ def lookup_bibles_org(bot, passage, version):
 
 def lookup_biblia_com(bot, passage, version):
     resp = requests.get('http://api.biblia.com/v1/bible/content/' + version + '.txt', params={ 'passage': passage, 'key': 'fd37d8f28e95d3be8cb4fbc37e15e18e', 'style': 'oneVersePerLine' })
-    lines = [ re.sub('^\d+', '', x).strip() for x in resp.text.encode('utf-8').split('\r\n') ]
+    lines = [ re.sub('^\d+', '', x).strip() for x in resp.text.split('\r\n') ]
     if lines == [''] or len(lines) == 1:
         raise NothingFoundException
 
